@@ -12,6 +12,13 @@ interface PageMeta {
     hydrate?: boolean;
 }
 
+// function that can have .meta on it e.g. function Home() { ... } Home.meta = { hydrate: true } // typeof Home === PageType
+type PageType = ComponentType & { meta?: PageMeta };
+
+export interface ModuleMap {
+    [key: string]: PageType;
+}
+
 interface Page {
     component: ComponentType;
     file: string;
@@ -80,34 +87,38 @@ const bundleFile = async (sourcefile: string) => {
 export const runtime = await bundleFile(`./jsx-runtime.ts`);
 export const hydrate = await bundleFile(`./hydrate.ts`);
 
-const pageMap: Record<string, Page> = {};
-for await (const dirEntry of Deno.readDir('./src/pages')) {
-    if (dirEntry.isFile) {
-        const file = await bundleFile(`../pages/${dirEntry.name}`);
+async function createPageMap(modules: ModuleMap) {
+    const pageMap: Record<string, Page> = {};
+    for await (const dirEntry of Deno.readDir('./src/pages')) {
+        if (dirEntry.isFile) {
+            const file = await bundleFile(`../pages/${dirEntry.name}`);
+            const module = modules[`_${dirEntry.name.replace('.tsx', '')}`];
 
-        const module = await import(`../pages/${dirEntry.name}`);
-        if (!isComponentType(module.default)) {
-            throw new Error(`Module ${dirEntry.name} does not default export a valid component`);
+            if (!isComponentType(module)) {
+                throw new Error(`Module ${dirEntry.name} does not default export a valid component`);
+            }
+
+            let pathName = dirEntry.name.split('.')[0];
+            if (pathName === 'index') pathName = '/';
+            pageMap[pathName] = {
+                component: module,
+                meta: module.meta,
+                file,
+            };
         }
-
-        let pathName = dirEntry.name.split('.')[0];
-        if (pathName === 'index') pathName = '/';
-        pageMap[pathName] = {
-            component: module.default,
-            meta: module.meta,
-            file,
-        };
     }
+    return pageMap;
 }
 
-function getComponentForPath(path: string): Page {
+async function getComponentForPath(modules: ModuleMap, path: string): Promise<Page> {
+    const pageMap = await createPageMap(modules);
     const page = pageMap[path] || pageMap['404'];
     if (!page) throw new Error(`No 404 page found`);
     return page;
 }
 
-export function render(url: URL): string {
-    const page = getComponentForPath(url.pathname);
+export async function render(modules: ModuleMap, url: URL): Promise<string> {
+    const page = await getComponentForPath(modules, url.pathname);
     const vnode = page.component();
 
     const document = new DOMParser().parseFromString(TEMPLATE, 'text/html');

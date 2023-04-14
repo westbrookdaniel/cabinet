@@ -31,6 +31,8 @@ export type VNode<K extends keyof HTMLElementTagNameMap> = {
 
 export function jsx<K extends keyof HTMLElementTagNameMap>(
     nodeName: K,
+    // TODO: fix this
+    // deno-lint-ignore no-explicit-any
     attributes: any, // children is string
 ): VNode<K> {
     return { nodeName, attributes };
@@ -38,6 +40,8 @@ export function jsx<K extends keyof HTMLElementTagNameMap>(
 
 export function jsxs<K extends keyof HTMLElementTagNameMap>(
     nodeName: K,
+    // TODO: fix this
+    // deno-lint-ignore no-explicit-any
     attributes: any, // children is VNode[]
 ): VNode<K> {
     return { nodeName, attributes };
