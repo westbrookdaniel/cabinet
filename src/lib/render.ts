@@ -1,6 +1,7 @@
 import { ComponentType, createNode, isComponentType } from '@/lib/jsx-runtime';
 import { DOMParser } from 'deno-dom';
 import * as esbuild from 'esbuild';
+import { denoPlugin } from 'esbuild-deno-loader';
 
 const TEMPLATE = await Deno.readTextFile('./src/index.html');
 
@@ -14,15 +15,26 @@ interface Page {
     meta?: PageMeta;
 }
 
-const bundleFile = async (sourcefile: string, code: string) => {
-    const loader = sourcefile.endsWith('.tsx') ? 'tsx' : 'ts';
+const bundleFile = async (sourcefile: string) => {
     const result = await esbuild.build({
-        stdin: { contents: code, loader, sourcefile, resolveDir: './' },
-        tsconfig: './tsconfig.json',
+        entryPoints: [import.meta.resolve(sourcefile)],
         bundle: true,
         format: 'esm',
         jsx: 'automatic',
+        treeShaking: true,
+        // TODO: Fix identifiers
+        // minify: true,
+        minifyWhitespace: true,
+        // minifyIdentifiers: true,
+        absWorkingDir: Deno.cwd(),
         jsxImportSource: '@/lib',
+        outdir: '.',
+        outfile: '',
+        platform: 'browser',
+        plugins: [denoPlugin({
+            importMapURL: new URL('../../import_map.json', import.meta.url),
+        })],
+        write: false,
         loader: {
             '.ts': 'ts',
             '.tsx': 'tsx',
@@ -38,17 +50,13 @@ const bundleFile = async (sourcefile: string, code: string) => {
     return output;
 };
 
-const rawRuntime = await Deno.readTextFile(`./src/lib/jsx-runtime.ts`);
-export const runtime = await bundleFile(`./src/lib/jsx-runtime.ts`, rawRuntime);
-
-const rawHydrate = await Deno.readTextFile(`./src/lib/hydrate.ts`);
-export const hydrate = await bundleFile(`./src/lib/hydrate.ts`, rawHydrate);
+export const runtime = await bundleFile(`./jsx-runtime.ts`);
+export const hydrate = await bundleFile(`./hydrate.ts`);
 
 const pageMap: Record<string, Page> = {};
 for (const dirEntry of Deno.readDirSync('./src/pages')) {
     if (dirEntry.isFile) {
-        const raw = await Deno.readTextFile(`./src/pages/${dirEntry.name}`);
-        const code = await bundleFile(`./src/pages/${dirEntry.name}`, raw);
+        const file = await bundleFile(`../pages/${dirEntry.name}`);
 
         const module = await import(`../pages/${dirEntry.name}`);
         if (!isComponentType(module.default)) {
@@ -59,8 +67,8 @@ for (const dirEntry of Deno.readDirSync('./src/pages')) {
         if (pathName === 'index') pathName = '/';
         pageMap[pathName] = {
             component: module.default,
-            file: code,
             meta: module.meta,
+            file,
         };
     }
 }
