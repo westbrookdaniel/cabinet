@@ -1,10 +1,6 @@
 import { serve } from 'std/http/server.ts';
-
-export type ComponentType = () => string;
-
-function isComponentType(value: unknown): value is ComponentType {
-    return typeof value === 'function';
-}
+import { ComponentType, isComponentType } from '@/lib/types.ts';
+import { render } from '@/lib/render.ts';
 
 const pageMap: Record<string, ComponentType> = {};
 for (const dirEntry of Deno.readDirSync('./src/pages')) {
@@ -31,26 +27,10 @@ function handler(req: Request): Response {
     }
 
     const url = new URL(req.url);
-
     const component = getComponentForPath(url.pathname);
-
-    const html = generateHtml(component());
+    const html = render(component);
 
     return new Response(new TextEncoder().encode(html));
-}
-
-function generateHtml(body: string): string {
-    return `
-        <!DOCTYPE html>	
-	<html lang="en">
-	<head>
-		<meta charset="UTF-8">
-		<title>Document</title>
-	</head>
-	<body>
-		${body}
-	</body>
-`;
 }
 
 serve(handler, { port: 3000 });
