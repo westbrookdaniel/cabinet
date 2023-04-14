@@ -49,25 +49,23 @@ const bundleFile = async (sourcefile: string) => {
         entryPoints: [new URL(sourcefile, import.meta.url).href],
         bundle: true,
         format: 'esm',
+        // metafile: true,
         jsx: 'automatic',
+        jsxImportSource: '@/lib',
         treeShaking: true,
         // TODO: Fix identifiers
         // minify: true,
         minifyWhitespace: true,
         // minifyIdentifiers: true,
         absWorkingDir: Deno.cwd(),
-        jsxImportSource: '@/lib',
         outdir: '.',
         outfile: '',
-        platform: 'browser',
+        platform: 'neutral',
+        target: ['chrome99', 'firefox99', 'safari15'],
         plugins: [denoPlugin({
             importMapURL: new URL('../../import_map.json', import.meta.url),
-        }) as any],
+        })],
         write: false,
-        loader: {
-            '.ts': 'ts',
-            '.tsx': 'tsx',
-        },
     });
     if (result.warnings.length) {
         console.error(result.warnings);

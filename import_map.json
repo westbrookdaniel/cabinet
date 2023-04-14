@@ -6,6 +6,6 @@
     "deno-dom": "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts",
     "esbuild/wasm": "https://deno.land/x/esbuild@v0.17.11/wasm.js",
     "esbuild/native": "https://deno.land/x/esbuild@v0.17.11/mod.js",
-    "esbuild-deno-loader": "https://deno.land/x/esbuild_deno_loader@0.6.0/mod.ts"
+    "esbuild-deno-loader": "https://raw.githubusercontent.com/lucacasonato/esbuild_deno_loader/8031f71afa1bbcd3237a94b11f53a2e5c5c0e7bf/mod.ts"
   }
 }
