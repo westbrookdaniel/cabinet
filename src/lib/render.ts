@@ -14,29 +14,41 @@ interface Page {
     meta?: PageMeta;
 }
 
+const bundleFile = async (sourcefile: string, code: string) => {
+    const loader = sourcefile.endsWith('.tsx') ? 'tsx' : 'ts';
+    const result = await esbuild.build({
+        stdin: { contents: code, loader, sourcefile, resolveDir: './' },
+        tsconfig: './tsconfig.json',
+        bundle: true,
+        format: 'esm',
+        jsx: 'automatic',
+        jsxImportSource: '@/lib',
+        loader: {
+            '.ts': 'ts',
+            '.tsx': 'tsx',
+        },
+    });
+    if (result.warnings.length) {
+        console.error(result.warnings);
+    }
+    const output = result.outputFiles?.[0]?.text;
+
+    if (!output) throw new Error(`Failed to transform`);
+
+    return output;
+};
+
 const rawRuntime = await Deno.readTextFile(`./src/lib/jsx-runtime.ts`);
-export const runtime = (await esbuild.transform(rawRuntime, {
-    loader: 'ts',
-    format: 'esm',
-})).code;
+export const runtime = await bundleFile(`./src/lib/jsx-runtime.ts`, rawRuntime);
 
 const rawHydrate = await Deno.readTextFile(`./src/lib/hydrate.ts`);
-export const hydrate = (await esbuild.transform(rawHydrate, {
-    loader: 'ts',
-    format: 'esm',
-})).code;
+export const hydrate = await bundleFile(`./src/lib/hydrate.ts`, rawHydrate);
 
 const pageMap: Record<string, Page> = {};
 for (const dirEntry of Deno.readDirSync('./src/pages')) {
     if (dirEntry.isFile) {
         const raw = await Deno.readTextFile(`./src/pages/${dirEntry.name}`);
-        const res = await esbuild.transform(raw, {
-            loader: 'tsx',
-            format: 'esm',
-            jsx: 'automatic',
-            jsxImportSource: '@/lib',
-        });
-        if (res.warnings.length) console.warn(res.warnings);
+        const code = await bundleFile(`./src/pages/${dirEntry.name}`, raw);
 
         const module = await import(`../pages/${dirEntry.name}`);
         if (!isComponentType(module.default)) {
@@ -47,13 +59,11 @@ for (const dirEntry of Deno.readDirSync('./src/pages')) {
         if (pathName === 'index') pathName = '/';
         pageMap[pathName] = {
             component: module.default,
-            file: res.code,
+            file: code,
             meta: module.meta,
         };
     }
 }
-
-esbuild.stop();
 
 function getComponentForPath(path: string): Page {
     const page = pageMap[path] || pageMap['404'];
