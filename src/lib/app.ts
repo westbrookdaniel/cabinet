@@ -45,9 +45,10 @@ export const modules = {${exportStr}};
     try {
         await Deno.writeTextFile('./modules.gen.ts', file);
     } catch {
+        console.log('Previous file: ' + file);
+        console.log('Current file: ' + currentFile);
         throw new Error(
-            'Runtime module generation is not supported on this platform. Please commit the generated file. \n\n Previous file: ' +
-                file + 'Current file: ' + currentFile,
+            'Runtime module generation is not supported on this platform. Please commit the generated file.',
         );
     }
 }
