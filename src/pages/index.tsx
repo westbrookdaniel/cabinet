@@ -1,4 +1,5 @@
 export default function Home() {
+  let count = 1
   return (
     <div>
       <h1 style="color: red;" id="home">
@@ -8,12 +9,15 @@ export default function Home() {
       <button
         onclick={(e) => {
           const el = e.target as HTMLButtonElement
-          el.dataset.count = (Number(el.dataset.count ?? 0) + 1).toString()
-          el.textContent = `Clicked ${el.dataset.count}`
+          el.textContent = `Clicked ${count++}`
         }}
       >
         Click Me
       </button>
     </div>
   )
+}
+
+export const meta = {
+  hydrate: true,
 }

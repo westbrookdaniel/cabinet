@@ -1,17 +1,27 @@
-import { ComponentType, isComponentType } from '@/lib/types.ts';
-import { VNode } from '@/lib/jsx-runtime';
-import { DOMParser, Element, HTMLDocument } from 'deno-dom';
+import { ComponentType, createNode, isComponentType } from '@/lib/jsx-runtime';
+import { DOMParser } from 'deno-dom';
 import * as esbuild from 'esbuild';
 
 const TEMPLATE = await Deno.readTextFile('./src/index.html');
 
+interface PageMeta {
+    hydrate?: boolean;
+}
+
 interface Page {
     component: ComponentType;
     file: string;
+    meta?: PageMeta;
 }
 
 const rawRuntime = await Deno.readTextFile(`./src/lib/jsx-runtime.ts`);
 export const runtime = (await esbuild.transform(rawRuntime, {
+    loader: 'ts',
+    format: 'esm',
+})).code;
+
+const rawHydrate = await Deno.readTextFile(`./src/lib/hydrate.ts`);
+export const hydrate = (await esbuild.transform(rawHydrate, {
     loader: 'ts',
     format: 'esm',
 })).code;
@@ -24,7 +34,7 @@ for (const dirEntry of Deno.readDirSync('./src/pages')) {
             loader: 'tsx',
             format: 'esm',
             jsx: 'automatic',
-            jsxImportSource: './lib',
+            jsxImportSource: '@/lib',
         });
         if (res.warnings.length) console.warn(res.warnings);
 
@@ -38,42 +48,17 @@ for (const dirEntry of Deno.readDirSync('./src/pages')) {
         pageMap[pathName] = {
             component: module.default,
             file: res.code,
+            meta: module.meta,
         };
     }
 }
+
 esbuild.stop();
 
 function getComponentForPath(path: string): Page {
     const page = pageMap[path] || pageMap['404'];
     if (!page) throw new Error(`No 404 page found`);
     return page;
-}
-
-function createNode(document: HTMLDocument, vnode: VNode<keyof HTMLElementTagNameMap>): Element {
-    const children = vnode.attributes.children;
-    const el = document.createElement(vnode.nodeName);
-    if (typeof children === 'string') {
-        el.appendChild(document?.createTextNode(children));
-    } else {
-        children.forEach((child) => {
-            if (typeof child === 'string') {
-                el?.appendChild(document.createTextNode(child));
-            } else {
-                el?.appendChild(createNode(document, child));
-            }
-        });
-    }
-
-    Object.entries(vnode.attributes).forEach(([key, value]) => {
-        if (key === 'children') return;
-        if (key.startsWith('on') && typeof value === 'function') {
-            el.addEventListener(key.slice(2), value as EventListener);
-            return;
-        }
-        el.setAttribute(key, value);
-    });
-
-    return el;
 }
 
 export function render(url: URL): string {
@@ -85,10 +70,18 @@ export function render(url: URL): string {
 
     document.body?.appendChild(createNode(document, vnode));
 
-    const bundle = document.createElement('script');
-    bundle.setAttribute('type', 'module');
-    bundle.innerHTML = page.file;
-    document.body?.appendChild(bundle);
+    if (page.meta?.hydrate) {
+        const bundle = document.createElement('script');
+        bundle.setAttribute('type', 'module');
+        bundle.innerHTML = page.file;
+        bundle.innerHTML += `window.component = ${page.component.name};`;
+        bundle.innerHTML += hydrate;
+
+        // TODO: Fix import paths
+        bundle.innerHTML = bundle.innerHTML.replace(/@\/lib/g, './lib');
+
+        document.body?.appendChild(bundle);
+    }
 
     return document.documentElement.outerHTML;
 }
