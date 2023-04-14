@@ -4,7 +4,7 @@
     "@/lib/jsx-runtime": "./src/lib/jsx-runtime.ts",
     "std/": "https://deno.land/std@0.183.0/",
     "deno-dom": "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts",
-    "esbuild": "https://deno.land/x/esbuild@v0.15.10/mod.js",
+    "esbuild": "https://deno.land/x/esbuild@v0.15.10/wasm.js",
     "esbuild-deno-loader": "https://deno.land/x/esbuild_deno_loader@0.6.0/mod.ts"
   }
 }
