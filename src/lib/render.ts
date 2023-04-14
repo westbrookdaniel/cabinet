@@ -81,7 +81,7 @@ export const runtime = await bundleFile(`./jsx-runtime.ts`);
 export const hydrate = await bundleFile(`./hydrate.ts`);
 
 const pageMap: Record<string, Page> = {};
-for (const dirEntry of Deno.readDirSync('./src/pages')) {
+for await (const dirEntry of Deno.readDir('./src/pages')) {
     if (dirEntry.isFile) {
         const file = await bundleFile(`../pages/${dirEntry.name}`);
 
