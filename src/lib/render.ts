@@ -1,7 +1,10 @@
 import { ComponentType, createNode, isComponentType } from '@/lib/jsx-runtime';
 import { DOMParser } from 'deno-dom';
-import * as esbuild from 'esbuild';
+import * as esbuildWasm from 'esbuild/wasm';
+import * as esbuildNative from 'esbuild/native';
 import { denoPlugin } from 'esbuild-deno-loader';
+
+const esbuild: typeof esbuildWasm = Deno.run === undefined ? esbuildWasm : esbuildNative;
 
 const TEMPLATE = await Deno.readTextFile('./src/index.html');
 
@@ -15,9 +18,35 @@ interface Page {
     meta?: PageMeta;
 }
 
+let esbuildInitialized: boolean | Promise<void> = false;
+async function ensureEsbuildInitialized() {
+    if (esbuildInitialized === false) {
+        if (Deno.run === undefined) {
+            const wasmURL = new URL('./esbuild_v0.17.11.wasm', import.meta.url).href;
+            esbuildInitialized = fetch(wasmURL).then(async (r) => {
+                const resp = new Response(r.body, {
+                    headers: { 'Content-Type': 'application/wasm' },
+                });
+                const wasmModule = await WebAssembly.compileStreaming(resp);
+                await esbuild.initialize({
+                    wasmModule,
+                    worker: false,
+                });
+            });
+        } else {
+            esbuild.initialize({});
+        }
+        await esbuildInitialized;
+        esbuildInitialized = true;
+    } else if (esbuildInitialized instanceof Promise) {
+        await esbuildInitialized;
+    }
+}
+
 const bundleFile = async (sourcefile: string) => {
+    await ensureEsbuildInitialized();
     const result = await esbuild.build({
-        entryPoints: [import.meta.resolve(sourcefile)],
+        entryPoints: [new URL(sourcefile, import.meta.url).href],
         bundle: true,
         format: 'esm',
         jsx: 'automatic',
@@ -33,7 +62,7 @@ const bundleFile = async (sourcefile: string) => {
         platform: 'browser',
         plugins: [denoPlugin({
             importMapURL: new URL('../../import_map.json', import.meta.url),
-        })],
+        }) as any],
         write: false,
         loader: {
             '.ts': 'ts',
