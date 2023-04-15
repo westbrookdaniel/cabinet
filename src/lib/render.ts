@@ -1,4 +1,4 @@
-import { createNode, isComponentType } from '@/lib/jsx-runtime';
+import { createNode } from '@/lib/createNode.ts';
 import { DOMParser } from 'deno-dom';
 import { bundleFile } from '@/lib/bundle.ts';
 import type { ModuleMap, PageData, PageDataMap } from '@/lib/types.ts';
@@ -15,7 +15,7 @@ async function createPageMap(modules: ModuleMap) {
             const file = await bundleFile(`../pages/${dirEntry.name}`);
             const module = modules[`_${dirEntry.name.replace('.tsx', '')}`];
 
-            if (!isComponentType(module)) {
+            if (typeof module !== 'function') {
                 throw new Error(`Module ${dirEntry.name} does not default export a valid component`);
             }
 
