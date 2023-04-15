@@ -4,7 +4,8 @@ export interface PageMeta {
 
 export type PageType = ComponentType & { meta?: PageMeta };
 
-export type ComponentType = <K extends keyof HTMLElementTagNameMap>() => VNode<K>;
+// deno-lint-ignore no-explicit-any
+export type ComponentType<P = any> = <T extends keyof HTMLElementTagNameMap>(props: P) => Node<T>;
 
 export interface ModuleMap {
     [key: string]: PageType;
@@ -20,13 +21,27 @@ export interface PageData {
     meta?: PageMeta;
 }
 
-export type VNode<K extends keyof HTMLElementTagNameMap> = {
-    nodeName: K;
-    attributes: Omit<HTMLElementTagNameMap[K], 'children' | 'style'> & {
-        children: (VNode<keyof HTMLElementTagNameMap> | string)[] | string;
+export type Children = any; // TODO: How to type all this properly?
+
+// Node can also be string? or null maybe?
+// deno-lint-ignore no-explicit-any
+export type Node<T extends keyof HTMLElementTagNameMap = any> = {
+    nodeName: T;
+    attributes: Omit<HTMLElementTagNameMap[T], 'children' | 'style'> & {
+        children: Node[] | Node | string;
         style?: string;
     };
 };
+
+export type ElementProps<T extends keyof HTMLElementTagNameMap> =
+    & Omit<
+        Partial<HTMLElementTagNameMap[T]>,
+        'style'
+    >
+    & {
+        // TODO: Support based object styles
+        style?: string;
+    };
 
 declare global {
     interface Window {
@@ -35,15 +50,7 @@ declare global {
 
     namespace JSX {
         type IntrinsicElements = {
-            [K in keyof HTMLElementTagNameMap]:
-                & Omit<
-                    Partial<HTMLElementTagNameMap[K]>,
-                    'style'
-                >
-                & {
-                    // TODO: Support based object styles
-                    style?: string;
-                };
+            [T in keyof HTMLElementTagNameMap]: ElementProps<T>;
         };
     }
 }
