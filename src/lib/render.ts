@@ -5,9 +5,6 @@ import type { ModuleMap, PageData, PageDataMap } from '@/lib/types.ts';
 
 const TEMPLATE = await Deno.readTextFile('./src/index.html');
 
-export const runtime = await bundleFile(`./jsx-runtime.ts`);
-export const hydrate = await bundleFile(`./hydrate.ts`);
-
 async function createPageMap(modules: ModuleMap) {
     const pageMap: PageDataMap = {};
     for await (const dirEntry of Deno.readDir('./src/pages')) {
@@ -52,10 +49,7 @@ export async function render(modules: ModuleMap, url: URL): Promise<string> {
         bundle.setAttribute('type', 'module');
         bundle.innerHTML = page.file;
         bundle.innerHTML += `window.component = ${page.component.name};`;
-        bundle.innerHTML += hydrate;
-
-        // TODO: Fix import paths
-        bundle.innerHTML = bundle.innerHTML.replace(/@\/lib/g, './lib');
+        bundle.innerHTML += await bundleFile(`./hydrate.ts`);
 
         document.body?.appendChild(bundle);
     }

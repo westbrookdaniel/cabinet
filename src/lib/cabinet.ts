@@ -1,4 +1,4 @@
-import { render, runtime } from '@/lib/render.ts';
+import { render } from '@/lib/render.ts';
 import type { ModuleMap } from './types.ts';
 
 export const createCabinet = async (modules: ModuleMap) => {
@@ -10,13 +10,6 @@ export const createCabinet = async (modules: ModuleMap) => {
         }
 
         const url = new URL(req.url);
-
-        switch (url.pathname) {
-            case '/lib/jsx-runtime':
-                return new Response(new TextEncoder().encode(runtime), {
-                    headers: { 'Content-Type': 'application/javascript' },
-                });
-        }
 
         const html = await render(modules, url);
         return new Response(new TextEncoder().encode(html));
