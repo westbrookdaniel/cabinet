@@ -2,6 +2,13 @@ import Section from '../components/Section.tsx';
 
 function Home() {
     let count = 1;
+
+    if (typeof document !== 'undefined') {
+        const el = document.querySelector('#home');
+        if (el) el.textContent = 'Hello World';
+        console.log(el);
+    }
+
     return (
         <div>
             <Section>
