@@ -42,7 +42,6 @@ export async function render(modules: ModuleMap, url: URL): Promise<string> {
     if (page.meta?.hydrate) {
         const main = document.createElement('script');
         main.setAttribute('type', 'module');
-        main.setAttribute('defer', '');
         main.textContent =
             `import h from './bundle/lib/hydrate.js';import p from './bundle/pages/${page.fileName}.js';h(p);`;
         document.head?.appendChild(main);
