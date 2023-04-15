@@ -44,7 +44,7 @@ export async function render(modules: ModuleMap, url: URL): Promise<string> {
         main.setAttribute('type', 'module');
         main.textContent =
             `import h from './bundle/lib/hydrate.js';import p from './bundle/pages/${page.fileName}.js';h(p);`;
-        document.head?.appendChild(main);
+        document.body?.appendChild(main);
     }
 
     return document.documentElement.outerHTML;
