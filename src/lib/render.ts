@@ -40,7 +40,7 @@ async function getComponentForPath(modules: ModuleMap, path: string): Promise<Pa
 
 export async function render(modules: ModuleMap, url: URL): Promise<string> {
     const page = await getComponentForPath(modules, url.pathname);
-    const vnode = page.component();
+    const vnode = page.component({});
 
     const document = new DOMParser().parseFromString(TEMPLATE, 'text/html');
     if (!document?.documentElement) throw new Error('Failed to parse document template');

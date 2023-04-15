@@ -5,7 +5,7 @@ export function isComponentType(value: unknown): value is ComponentType {
     return typeof value === 'function';
 }
 
-export function jsx<K extends keyof HTMLElementTagNameMap>(
+function createVNode<K extends keyof HTMLElementTagNameMap>(
     elementType: K | ComponentType,
     // TODO: fix this
     // deno-lint-ignore no-explicit-any
@@ -17,18 +17,14 @@ export function jsx<K extends keyof HTMLElementTagNameMap>(
     return { nodeName: elementType, attributes };
 }
 
-export function jsxs<K extends keyof HTMLElementTagNameMap>(
-    elementType: K | ComponentType,
-    // TODO: fix this
-    // deno-lint-ignore no-explicit-any
-    attributes: any, // children is Node[]
-): Node<K> {
-    if (typeof elementType === 'function') {
-        return elementType(attributes);
-    }
-    return { nodeName: elementType, attributes };
+// deno-lint-ignore no-explicit-any
+export function Fragment(props: any) {
+    return props.children;
 }
 
+export { createVNode as jsx, createVNode as jsxs };
+
+// TODO: This probs shouldnt be here
 export function createNode(document: HTMLDocument, vnode: Node<keyof HTMLElementTagNameMap>): Element {
     const children = vnode.attributes.children;
     const el = document.createElement(vnode.nodeName);

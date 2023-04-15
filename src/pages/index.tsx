@@ -5,10 +5,12 @@ function Home() {
     return (
         <div>
             <Section>
-                <h1 style='color: red;' id='home'>
-                    Home Page
-                </h1>
-                <p>This is my string jsx</p>
+                <>
+                    <h1 style='color: red;' id='home'>
+                        Home Page
+                    </h1>
+                    <p>This is my string jsx</p>
+                </>
             </Section>
             <Section>
                 <button
