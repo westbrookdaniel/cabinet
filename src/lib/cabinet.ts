@@ -1,6 +1,7 @@
-import { ModuleMap, render, runtime } from '@/lib/render.ts';
+import { render, runtime } from '@/lib/render.ts';
+import type { ModuleMap } from './types.ts';
 
-export const createApp = async (modules: ModuleMap) => {
+export const createCabinet = async (modules: ModuleMap) => {
     await generateModules();
 
     return async (req: Request): Promise<Response> => {

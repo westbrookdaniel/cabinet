@@ -1,5 +1,5 @@
-import { createApp } from '@/lib/app.ts';
+import { createCabinet } from '@/lib/cabinet.ts';
 import { serve } from 'std/http/server.ts';
 import { modules } from '../modules.gen.ts';
 
-serve(await createApp(modules), { port: 3000 });
+serve(await createCabinet(modules), { port: 3000 });

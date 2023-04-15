@@ -1,33 +1,9 @@
 import type { Element, HTMLDocument } from 'deno-dom';
-
-export type ComponentType = <K extends keyof HTMLElementTagNameMap>() => VNode<K>;
+import type { ComponentType, VNode } from '@/lib/types.ts';
 
 export function isComponentType(value: unknown): value is ComponentType {
     return typeof value === 'function';
 }
-
-declare global {
-    namespace JSX {
-        type IntrinsicElements = {
-            [K in keyof HTMLElementTagNameMap]:
-                & Omit<
-                    Partial<HTMLElementTagNameMap[K]>,
-                    'style'
-                >
-                & {
-                    style?: string;
-                };
-        };
-    }
-}
-
-export type VNode<K extends keyof HTMLElementTagNameMap> = {
-    nodeName: K;
-    attributes: Omit<HTMLElementTagNameMap[K], 'children' | 'style'> & {
-        children: (VNode<keyof HTMLElementTagNameMap> | string)[] | string;
-        style?: string;
-    };
-};
 
 export function jsx<K extends keyof HTMLElementTagNameMap>(
     nodeName: K,
@@ -72,10 +48,4 @@ export function createNode(document: HTMLDocument, vnode: VNode<keyof HTMLElemen
     });
 
     return el;
-}
-
-declare global {
-    interface Window {
-        component?: ComponentType;
-    }
 }
