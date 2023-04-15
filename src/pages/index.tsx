@@ -6,7 +6,6 @@ function Home() {
     if (typeof document !== 'undefined') {
         const el = document.querySelector('#home');
         if (el) el.textContent = 'Hello World';
-        console.log(el);
     }
 
     return (
