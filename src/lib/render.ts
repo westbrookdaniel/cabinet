@@ -1,42 +1,37 @@
 import { createNode } from '@/lib/createNode.ts';
 import { DOMParser } from 'deno-dom';
-import { bundleFile } from '@/lib/bundle.ts';
-import type { ModuleMap, PageData, PageDataMap } from '@/lib/types.ts';
+import type { ModuleMap } from '@/lib/types.ts';
 
 const TEMPLATE = await Deno.readTextFile('./src/index.html');
 
-async function createPageMap(modules: ModuleMap) {
-    const pageMap: PageDataMap = {};
-    for await (const dirEntry of Deno.readDir('./src/pages')) {
-        if (dirEntry.isFile) {
-            const file = await bundleFile(`../pages/${dirEntry.name}`);
-            const module = modules[`_${dirEntry.name.replace('.tsx', '')}`];
+async function getPageDataForPath(modules: ModuleMap, path: string) {
+    const fileName = path === '/' ? 'index' : path.slice(1);
 
-            if (typeof module !== 'function') {
-                throw new Error(`Module ${dirEntry.name} does not default export a valid component`);
-            }
-
-            let pathName = dirEntry.name.split('.')[0];
-            if (pathName === 'index') pathName = '/';
-            pageMap[pathName] = {
-                component: module,
-                meta: module.meta,
-                file,
-            };
-        }
+    try {
+        await Deno.stat(`./src/pages/${fileName}.tsx`);
+    } catch {
+        return {
+            component: modules._404,
+            meta: modules._404.meta,
+            fileName,
+        };
     }
-    return pageMap;
-}
 
-async function getComponentForPath(modules: ModuleMap, path: string): Promise<PageData> {
-    const pageMap = await createPageMap(modules);
-    const page = pageMap[path] || pageMap['404'];
-    if (!page) throw new Error(`No 404 page found`);
-    return page;
+    const module = modules[`_${fileName}`];
+
+    if (typeof module !== 'function') {
+        throw new Error(`Couldnt find vaild component for ${path}`);
+    }
+
+    return {
+        component: module,
+        meta: module.meta,
+        fileName,
+    };
 }
 
 export async function render(modules: ModuleMap, url: URL): Promise<string> {
-    const page = await getComponentForPath(modules, url.pathname);
+    const page = await getPageDataForPath(modules, url.pathname);
     const vnode = page.component({});
 
     const document = new DOMParser().parseFromString(TEMPLATE, 'text/html');
@@ -45,13 +40,12 @@ export async function render(modules: ModuleMap, url: URL): Promise<string> {
     document.body?.appendChild(createNode(document, vnode));
 
     if (page.meta?.hydrate) {
-        const bundle = document.createElement('script');
-        bundle.setAttribute('type', 'module');
-        bundle.innerHTML = page.file;
-        bundle.innerHTML += `window.component = ${page.component.name};`;
-        bundle.innerHTML += await bundleFile(`./hydrate.ts`);
-
-        document.body?.appendChild(bundle);
+        const main = document.createElement('script');
+        main.setAttribute('type', 'module');
+        main.setAttribute('defer', '');
+        main.textContent =
+            `import h from './bundle/lib/hydrate.js';import p from './bundle/pages/${page.fileName}.js';h(p);`;
+        document.head?.appendChild(main);
     }
 
     return document.documentElement.outerHTML;

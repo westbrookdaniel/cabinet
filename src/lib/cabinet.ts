@@ -1,5 +1,7 @@
 import { render } from '@/lib/render.ts';
 import type { ModuleMap } from './types.ts';
+import { serveDir } from 'std/http/file_server.ts';
+import { bundleFiles, serveBundle } from './bundle.ts';
 
 export const createCabinet = async (modules: ModuleMap) => {
     await generateModules();
@@ -10,6 +12,18 @@ export const createCabinet = async (modules: ModuleMap) => {
         }
 
         const url = new URL(req.url);
+
+        if (url.pathname.startsWith('/public')) {
+            return serveDir(req, { fsRoot: './src/public', urlRoot: 'public' });
+        }
+
+        if (url.pathname.startsWith('/bundle') && url.pathname.endsWith('.js')) {
+            return serveBundle(url.pathname.replace('/bundle/', ''));
+        }
+
+        if (url.pathname === '/favicon.ico') {
+            return new Response(null, { status: 404 });
+        }
 
         const html = await render(modules, url);
         return new Response(new TextEncoder().encode(html));

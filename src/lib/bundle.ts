@@ -29,23 +29,35 @@ async function ensureEsbuildInitialized() {
     }
 }
 
-export async function bundleFile(sourcefile: string) {
+export async function bundleFiles(sourcefiles: string[]) {
     await ensureEsbuildInitialized();
+
     const result = await esbuild.build({
-        entryPoints: [new URL(sourcefile, import.meta.url).href],
+        entryPoints: sourcefiles.map((file) => new URL(file, import.meta.url).href),
         bundle: true,
         format: 'esm',
         // metafile: true,
         jsx: 'automatic',
         jsxImportSource: '@/lib',
         treeShaking: true,
-        // TODO: Fix identifiers
-        // minify: true,
+        minify: true,
         minifyWhitespace: true,
-        // minifyIdentifiers: true,
+        minifyIdentifiers: true,
         absWorkingDir: Deno.cwd(),
         outdir: '.',
         outfile: '',
+        loader: {
+            '.ts': 'ts',
+            '.tsx': 'tsx',
+            '.json': 'json',
+            '.css': 'css',
+            '.txt': 'text',
+            '.png': 'dataurl',
+            '.jpg': 'dataurl',
+            '.gif': 'dataurl',
+            '.svg': 'dataurl',
+            '.ico': 'dataurl',
+        },
         platform: 'neutral',
         target: ['chrome99', 'firefox99', 'safari15'],
         plugins: [denoPlugin({
@@ -53,12 +65,41 @@ export async function bundleFile(sourcefile: string) {
         })],
         write: false,
     });
+
     if (result.warnings.length) {
         console.error(result.warnings);
     }
-    const output = result.outputFiles?.[0]?.text;
 
-    if (!output) throw new Error(`Failed to transform`);
+    const outputs = result.outputFiles;
+    if (!outputs) throw new Error(`Failed to transform`);
+    return outputs;
+}
 
-    return output;
+export async function serveBundle(path: string) {
+    // path is something like bundle/pages/index.js
+    const pathToBundle = '../' + path;
+
+    // find the original file extension
+    let ext: string | null = null;
+    for await (
+        const dirEntry of Deno.readDir(
+            new URL(pathToBundle.slice(0, pathToBundle.lastIndexOf('/')), import.meta.url).pathname,
+        )
+    ) {
+        if (dirEntry.name.startsWith(pathToBundle.slice(pathToBundle.lastIndexOf('/') + 1, -3))) {
+            ext = dirEntry.name.slice(dirEntry.name.lastIndexOf('.'));
+            break;
+        }
+    }
+    if (!ext) throw new Error('Could not find file extension for ' + pathToBundle);
+
+    // bundle the file
+    const outputs = await bundleFiles([
+        pathToBundle.slice(0, -3) + ext,
+    ]);
+
+    // serve bundled file
+    return new Response(outputs[0].text, {
+        headers: { 'Content-Type': 'application/javascript' },
+    });
 }

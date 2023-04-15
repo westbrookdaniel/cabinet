@@ -11,16 +11,6 @@ export interface ModuleMap {
     [key: string]: PageType;
 }
 
-export interface PageDataMap {
-    [key: string]: PageData;
-}
-
-export interface PageData {
-    component: ComponentType;
-    file: string;
-    meta?: PageMeta;
-}
-
 // Node can also be string? or null maybe?
 export type Node<T extends keyof HTMLElementTagNameMap> = {
     nodeName: T;
@@ -57,10 +47,6 @@ export type ElementProps<T extends keyof HTMLElementTagNameMap> =
     };
 
 declare global {
-    interface Window {
-        component?: ComponentType;
-    }
-
     namespace JSX {
         type IntrinsicElements = {
             [T in keyof HTMLElementTagNameMap]: ElementProps<T>;

@@ -1,4 +1,4 @@
-import type { Node } from '@/lib/types.ts';
+import type { ComponentType, Node } from '@/lib/types.ts';
 
 /**
  * Similar structure to createNode but just traverses the dom and applies event listeners
@@ -40,7 +40,7 @@ function hydrateNode(
     }
 
     // Check this is roughly the same node
-    if (currentNode.nodeName !== vnode.nodeName) {
+    if (currentNode.nodeName.toLowerCase() !== vnode.nodeName) {
         console.warn('Hydration failed, node names do not match', currentNode.nodeName, vnode.nodeName);
         return; // Break but don't throw
     }
@@ -56,9 +56,6 @@ function hydrateNode(
     });
 }
 
-if (typeof document !== 'undefined') {
-    const component = window.component;
-    if (typeof component === 'function') {
-        hydrateNode(document.body, component({}), document.body.children[0]);
-    }
+export default function hydrate(component: ComponentType) {
+    hydrateNode(document.body, component({}), document.body.children[0]);
 }

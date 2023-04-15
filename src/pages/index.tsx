@@ -1,4 +1,4 @@
-import Section from '../components/Section.tsx';
+import Section from '@/components/Section.tsx';
 
 function Home() {
     let count = 1;
