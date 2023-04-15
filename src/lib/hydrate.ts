@@ -39,6 +39,12 @@ function hydrateNode(
         }
     }
 
+    // Check this is roughly the same node
+    if (currentNode.nodeName !== vnode.nodeName) {
+        console.warn('Hydration failed, node names do not match', currentNode.nodeName, vnode.nodeName);
+        return; // Break but don't throw
+    }
+
     // Apply event listeners
     // Any code that modifies the dom will be run too
     Object.entries(vnode.attributes).forEach(([key, value]) => {
