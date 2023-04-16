@@ -1,7 +1,7 @@
 import { render } from '@/lib/render.ts';
 import { serveDir } from 'std/http/file_server.ts';
-import { serveBundle } from '@/lib/bundle.ts';
 import { ModuleMap } from '@/lib/types.ts';
+import { bundleFiles } from './bundle.ts';
 
 export const createServer = async (modules: ModuleMap) => {
     await generateModules();
@@ -62,4 +62,41 @@ export const modules = {
             'Runtime module generation is not supported on this platform. Please commit the generated file.',
         );
     }
+}
+
+// not sure if these even does anything on deno deploy
+const cache = new Map<string, string>();
+
+export async function serveBundle(path: string) {
+    // use cache if we have it
+    if (cache.has(path)) {
+        return new Response(cache.get(path), { headers: { 'Content-Type': 'application/javascript' } });
+    }
+
+    // path is something like bundle/pages/index.js
+    const pathToBundle = '../' + path;
+
+    // find the original file extension
+    let ext: string | null = null;
+    for await (
+        const dirEntry of Deno.readDir(
+            new URL(pathToBundle.slice(0, pathToBundle.lastIndexOf('/')), import.meta.url).pathname,
+        )
+    ) {
+        if (dirEntry.name.startsWith(pathToBundle.slice(pathToBundle.lastIndexOf('/') + 1, -3))) {
+            ext = dirEntry.name.slice(dirEntry.name.lastIndexOf('.'));
+            break;
+        }
+    }
+    if (!ext) throw new Error('Could not find file extension for ' + pathToBundle);
+
+    // bundle the file
+    const outputs = await bundleFiles([
+        pathToBundle.slice(0, -3) + ext,
+    ]);
+
+    // serve bundled file and cache output
+    const text = outputs[0].text;
+    cache.set(path, text);
+    return new Response(text, { headers: { 'Content-Type': 'application/javascript' } });
 }
