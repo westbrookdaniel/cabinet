@@ -1,8 +1,29 @@
-import { createNode } from '@/lib/createNode.ts';
-import { DOMParser } from 'deno-dom';
-import type { ModuleMap } from '@/lib/types.ts';
+import type { ModuleMap, Node } from '@/lib/types.ts';
+import { traverse } from '@/lib/tranverse.ts';
 
 const TEMPLATE = await Deno.readTextFile('./src/index.html');
+
+// deno-lint-ignore no-explicit-any
+export function serializeNode(vnode: Node<any>): string {
+    const children = vnode.attributes.children;
+    let childrenStr = '';
+    if (children) {
+        traverse(children, {
+            node: (child) => childrenStr += serializeNode(child),
+            string: (child) => childrenStr += child,
+        });
+    }
+
+    let attributeStr = '';
+    Object.entries(vnode.attributes).forEach(([key, value]) => {
+        if (value === undefined) return; // Ignore undefined
+        if (key === 'children') return; // Ignore children
+        if (key.startsWith('on')) return; // Ignore events
+        attributeStr += ` ${key}="${value}"`;
+    });
+
+    return `<${vnode.nodeName}${attributeStr}>${childrenStr}</${vnode.nodeName}>`;
+}
 
 async function getPageDataForPath(modules: ModuleMap, path: string) {
     const fileName = path === '/' ? 'index' : path.slice(1);
@@ -34,19 +55,14 @@ export async function render(modules: ModuleMap, url: URL): Promise<string> {
     const page = await getPageDataForPath(modules, url.pathname);
     const vnode = page.component({});
 
-    const document = new DOMParser().parseFromString(TEMPLATE, 'text/html');
-    if (!document?.documentElement) throw new Error('Failed to parse document template');
+    const shouldHydrate = page.meta?.hydrate !== false;
 
-    document.body?.appendChild(createNode(document, vnode));
+    const uglyTemplate = TEMPLATE.replace(/<!--(.*?)-->|\s\B/gm, '');
 
-    // Default to hydrating the page
-    if (page.meta?.hydrate !== false) {
-        const main = document.createElement('script');
-        main.setAttribute('type', 'module');
-        main.textContent =
-            `import h from './bundle/lib/hydrate.js';import p from './bundle/pages/${page.fileName}.js';h(p);`;
-        document.body?.appendChild(main);
-    }
-
-    return document.documentElement.outerHTML;
+    return uglyTemplate.replace('{{app}}', serializeNode(vnode)).replace(
+        '{{scripts}}',
+        shouldHydrate
+            ? `<script type="module">import h from './bundle/lib/hydrate.js';import p from './bundle/pages/${page.fileName}.js';h(p);</script>`
+            : '',
+    );
 }
