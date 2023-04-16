@@ -75,7 +75,14 @@ export async function bundleFiles(sourcefiles: string[]) {
     return outputs;
 }
 
+const cache = new Map<string, string>();
+
 export async function serveBundle(path: string) {
+    // use cache if we have it
+    if (cache.has(path)) {
+        return new Response(cache.get(path), { headers: { 'Content-Type': 'application/javascript' } });
+    }
+
     // path is something like bundle/pages/index.js
     const pathToBundle = '../' + path;
 
@@ -98,8 +105,8 @@ export async function serveBundle(path: string) {
         pathToBundle.slice(0, -3) + ext,
     ]);
 
-    // serve bundled file
-    return new Response(outputs[0].text, {
-        headers: { 'Content-Type': 'application/javascript' },
-    });
+    // serve bundled file and cache output
+    const text = outputs[0].text;
+    cache.set(path, text);
+    return new Response(text, { headers: { 'Content-Type': 'application/javascript' } });
 }

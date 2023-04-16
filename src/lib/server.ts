@@ -1,14 +1,14 @@
 import { render } from '@/lib/render.ts';
-import type { ModuleMap } from './types.ts';
 import { serveDir } from 'std/http/file_server.ts';
-import { bundleFiles, serveBundle } from './bundle.ts';
+import { serveBundle } from '@/lib/bundle.ts';
+import { ModuleMap } from '@/lib/types.ts';
 
-export const createCabinet = async (modules: ModuleMap) => {
+export const createServer = async (modules: ModuleMap) => {
     await generateModules();
 
     return async (req: Request): Promise<Response> => {
         if (req.method !== 'GET') {
-            return Response.json({ error: 'Method not allowed' }, { status: 405 });
+            return new Response('Method not allowed', { status: 405 });
         }
 
         const url = new URL(req.url);
