@@ -1,39 +1,26 @@
-import Section from '@/components/Section.tsx';
+import TodoItem from '@/components/TodoItem.tsx';
+
+export type Todo = {
+    id: number;
+    text: string;
+    done: boolean;
+};
 
 function Home() {
-    let count = 1;
-
-    if (typeof document !== 'undefined') {
-        const el = document.querySelector('#home');
-        if (el) el.textContent = 'Hello World';
-    }
+    const todos: Todo[] = [
+        { id: 1, text: 'Handle bundling', done: true },
+        { id: 2, text: 'Make reactive', done: false },
+        { id: 3, text: 'Improve performance', done: false },
+    ];
 
     return (
         <div>
-            <Section>
-                <>
-                    <h1 style='color: red;' id='home'>
-                        Home Page
-                    </h1>
-                    <p>This is my string jsx</p>
-                </>
-            </Section>
-            <Section>
-                <button
-                    onclick={(e) => {
-                        const el = e.target as HTMLButtonElement;
-                        el.textContent = `Clicked ${count++}`;
-                    }}
-                >
-                    Click Me
-                </button>
-            </Section>
+            {todos.map((todo) => <TodoItem todo={todo} />)}
+            <pre style='margin-top: 10px' id='json'>
+                {JSON.stringify(todos, undefined, 2)}
+            </pre>
         </div>
     );
 }
-
-Home.meta = {
-    hydrate: true,
-};
 
 export default Home;

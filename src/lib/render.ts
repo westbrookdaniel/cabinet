@@ -39,7 +39,8 @@ export async function render(modules: ModuleMap, url: URL): Promise<string> {
 
     document.body?.appendChild(createNode(document, vnode));
 
-    if (page.meta?.hydrate) {
+    // Default to hydrating the page
+    if (page.meta?.hydrate !== false) {
         const main = document.createElement('script');
         main.setAttribute('type', 'module');
         main.textContent =

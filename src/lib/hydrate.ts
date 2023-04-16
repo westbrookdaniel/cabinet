@@ -1,47 +1,28 @@
 import type { ComponentType, Node } from '@/lib/types.ts';
+import { traverse } from './tranverse.ts';
 
 /**
  * Similar structure to createNode but just traverses the dom and applies event listeners
  */
 function hydrateNode(
-    root: HTMLElement,
     vnode: Node<keyof HTMLElementTagNameMap>,
     currentNode: Element,
 ) {
-    const children = vnode.attributes.children;
-    if (typeof children === 'string') {
-        // Ignore
-    } else if (Array.isArray(children)) {
-        children.forEach((child, i) => {
-            if (typeof child === 'string') {
-                // Ignore
-            } else {
-                // Traverse
-                const childNode = currentNode.children[i];
-                if (!childNode) {
-                    console.warn('Hydration failed, no child node found at index', i, 'of', currentNode);
-                    return; // Break but don't throw
-                }
-                hydrateNode(root, child, childNode);
-            }
-        });
-    } else {
-        if (typeof children === 'string') {
-            // Ignore
-        } else {
+    traverse(vnode.attributes.children, {
+        node: (child, i) => {
             // Traverse
-            const childNode = currentNode.children[0];
-            if (!childNode) {
-                console.warn('Hydration failed, no child node for', currentNode);
-                return; // Break but don't throw
-            }
-            hydrateNode(root, children, childNode);
-        }
-    }
+            const childNode = i ? currentNode.children[i] : currentNode.children[0];
+            if (!childNode) return;
+            hydrateNode(child, childNode);
+        },
+        string: () => {
+            // Ignore
+        },
+    });
 
     // Check this is roughly the same node
     if (currentNode.nodeName.toLowerCase() !== vnode.nodeName) {
-        console.warn('Hydration failed, node names do not match', currentNode.nodeName, vnode.nodeName);
+        console.warn('Hydration failed, nodes dont match', vnode, currentNode);
         return; // Break but don't throw
     }
 
@@ -57,5 +38,5 @@ function hydrateNode(
 }
 
 export default function hydrate(component: ComponentType) {
-    hydrateNode(document.body, component({}), document.body.children[0]);
+    hydrateNode(component({}), document.body.children[0]);
 }

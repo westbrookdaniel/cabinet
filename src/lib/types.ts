@@ -16,7 +16,7 @@ export type Node<T extends keyof HTMLElementTagNameMap> = {
     nodeName: T;
     attributes: Omit<HTMLElementTagNameMap[T], 'children' | 'style'> & {
         // deno-lint-ignore no-explicit-any
-        children: Node<any>[] | Node<any> | string;
+        children: (Node<any> | string)[] | Node<any> | string;
         style?: string;
     };
 };
