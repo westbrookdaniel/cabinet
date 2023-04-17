@@ -1,5 +1,6 @@
 export interface Internals {
-    registry: { node: HydratedNode<any>; state: any }[];
+    state: any[];
+    registry: HydratedNode<any>[];
     register: <T>(value: T) => { key: number; state: T };
     render: <T>(key: number, value: T) => void;
 }

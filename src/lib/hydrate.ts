@@ -27,7 +27,6 @@ function serializeNode(vnode: Node<any>): string {
 }
 
 export const internals: Internals = {
-    registry: [],
     register: () => {
         throw new Error('Register function not set');
     },
@@ -36,22 +35,24 @@ export const internals: Internals = {
         const root = internals.registry[key];
         if (!root) throw new Error('Root not found');
 
+        console.log('RENDER', key, internals);
+
         // Update the value
-        internals.registry[key] = { node: root.node, state: newState };
+        internals.state[key] = newState;
 
         // Update the dom
-        const s = serializeNode(root.node);
+        const s = serializeNode(root);
         console.log(s);
-        root.node.el.innerHTML = s;
+        root.el.innerHTML = s;
     },
 };
 
 function updateRegister(node: HydratedNode<any>) {
-    // TODO: do i pop here? how does react manage their context stack?
+    // TODO: need to do a pop but where?
     // this is pretty broken
-    internals.register = (state) => {
-        const key = internals.registry.length; // Index of item to be added
-        internals.registry.push({ node, state });
+    internals.register = (initialState) => {
+        // Store state on the HydratedNode?
+        // node.state.push(initialState); ??
         return { key, state };
     };
 }
@@ -130,11 +131,10 @@ export function getInternals(): Internals {
     }
     // Fake some internals for the server
     return {
+        state: [],
         registry: [],
         register: (state) => {
-            const key = internals.registry.length; // Index of item to be added
-            internals.registry.push({ node: null as any, state });
-            return { key, state };
+            return { key: 0, state };
         },
         render: () => {
             throw new Error('Rendering is not supported in the server');
