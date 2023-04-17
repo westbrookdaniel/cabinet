@@ -1,8 +1,11 @@
 import type { ComponentType, HydratedNode, Internals, Node } from '@/lib/types.ts';
 import { traverse } from '@/lib/traverse.ts';
 
+// Need to make this a lot more like hydrated node
+// but creating elements with dom methods too
 function serializeNode(vnode: Node<any>): string {
     if (typeof vnode.type === 'function') {
+        // Add update internals here
         return serializeNode(vnode.type(vnode.attributes));
     }
 
@@ -42,32 +45,43 @@ export const internals: Internals = {
     },
 };
 
-// TODO: Move the tracking of these into a weak map for each node
-// should be more reliable with better cleanup?
+const internalsInUse = new WeakMap<Element, Internals['current']>();
+
 function updateInternals(node: HydratedNode<any>, previousContext: any[] | null = null) {
-    const internalsForNode: Internals['current'] = {
-        previousContext,
-        context: [],
-        register: (initialState) => {
-            const localContext = internalsForNode.context;
-            const key = localContext.length;
-            localContext.push(initialState);
-            return key;
-        },
-        set: (key, newValue) => {
-            console.log(node.el, 'set', key, newValue);
-            const newState = internalsForNode.context;
-            newState[key] = newValue;
-            updateInternals(node, [...newState]);
-            const html = serializeNode(node);
-            node.el.innerHTML = html;
-        },
-        get: (key) => {
-            if (internalsForNode.previousContext) return internalsForNode.previousContext[key];
-            return internalsForNode.context[key];
-        },
-    };
-    internals.current = internalsForNode;
+    if (internalsInUse.has(node.el)) {
+        const internalsForNode = internalsInUse.get(node.el)!;
+        internalsForNode.previousContext = previousContext;
+        internalsForNode.context = [];
+        internals.current = internalsForNode;
+    } else {
+        const internalsForNode: Internals['current'] = {
+            previousContext,
+            context: [],
+            register: (initialState) => {
+                const localContext = internalsForNode.context;
+                const key = localContext.length;
+                localContext.push(initialState);
+                return key;
+            },
+            set: (key, newValue) => {
+                console.log(node.el, 'set', key, newValue);
+                const newState = internalsForNode.context;
+                newState[key] = newValue;
+                updateInternals(node, [...newState]);
+                const html = serializeNode(node);
+                console.log(html);
+                node.el.innerHTML = html;
+            },
+            get: (key) => {
+                console.log('get', node, internalsForNode, key);
+                if (internalsForNode.previousContext) return internalsForNode.previousContext[key];
+                return internalsForNode.context[key];
+            },
+        };
+
+        internalsInUse.set(node.el, internalsForNode);
+        internals.current = internalsForNode;
+    }
 }
 
 /**
