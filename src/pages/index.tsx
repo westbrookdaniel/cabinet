@@ -29,10 +29,15 @@ function Home() {
                     onToggle={() => onToggle(todo.id)}
                 />
             ))}
-            <pre style='margin-top: 10px'>
+            <pre style='margin-top: 10px;'>
                 {JSON.stringify(todos.value, undefined, 2)}
             </pre>
-            <Counter />
+            <div style='margin-top: 10px;'>
+                <Counter />
+            </div>
+            <div style='margin-top: 10px;'>
+                <Counter />
+            </div>
         </div>
     );
 }

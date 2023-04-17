@@ -1,8 +1,9 @@
 export interface Internals {
-    state: any[];
-    registry: HydratedNode<any>[];
-    register: <T>(value: T) => { key: number; state: T };
-    render: <T>(key: number, value: T) => void;
+    current: {
+        register: <T>(value: T) => number;
+        get: <T>(key: number) => T;
+        set: <T>(key: number, newValue: T) => void;
+    };
 }
 
 export interface PageMeta {
@@ -27,7 +28,7 @@ export type Node<T extends keyof HTMLElementTagNameMap> = {
     type: T | ComponentType;
     attributes: Omit<HTMLElementTagNameMap[T], 'children' | 'style'> & {
         // deno-lint-ignore no-explicit-any
-        children: (Node<any> | string)[] | Node<any> | string;
+        children?: (Node<any> | string)[] | Node<any> | string;
         style?: string;
     };
 };

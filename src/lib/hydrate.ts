@@ -27,33 +27,40 @@ function serializeNode(vnode: Node<any>): string {
 }
 
 export const internals: Internals = {
-    register: () => {
-        throw new Error('Register function not set');
-    },
-    render: (key, newState) => {
-        // Get the root
-        const root = internals.registry[key];
-        if (!root) throw new Error('Root not found');
-
-        console.log('RENDER', key, internals);
-
-        // Update the value
-        internals.state[key] = newState;
-
-        // Update the dom
-        const s = serializeNode(root);
-        console.log(s);
-        root.el.innerHTML = s;
+    current: {
+        register: () => {
+            throw new Error('Register function not set');
+        },
+        set: () => {
+            throw new Error('Set function not set');
+        },
+        get: () => {
+            throw new Error('Get function not set');
+        },
     },
 };
 
-function updateRegister(node: HydratedNode<any>) {
-    // TODO: need to do a pop but where?
-    // this is pretty broken
-    internals.register = (initialState) => {
-        // Store state on the HydratedNode?
-        // node.state.push(initialState); ??
-        return { key, state };
+const context = new Map();
+
+function updateInternals(node: HydratedNode<any>) {
+    internals.current = {
+        register: (state) => {
+            if (context.has(node)) {
+                const localContext = context.get(node);
+                const key = localContext.length;
+                localContext.push(state);
+                return key;
+            } else {
+                context.set(node, [state]);
+                return 0;
+            }
+        },
+        set: (key, newValue) => {
+            console.log(node.el, newValue, context.get(node));
+        },
+        get: (key) => {
+            return context.get(node)[key];
+        },
     };
 }
 
@@ -71,7 +78,7 @@ function hydrateNode(
     // If the node is a component, hydrate the component
     if (typeof node.type === 'function') {
         // Update the internals to the current node
-        updateRegister(hydratedNode);
+        updateInternals(hydratedNode);
         const component = node.type as ComponentType;
         const componentNode = component(node.attributes);
         const hydratedComponent = hydrateNode(componentNode, {
@@ -85,7 +92,7 @@ function hydrateNode(
     }
 
     const hydratedChildren: HydratedNode<keyof HTMLElementTagNameMap>[] = [];
-    traverse(node.attributes.children, {
+    traverse(node.attributes.children || [], {
         node: (child, i) => {
             // Traverse
             const childNode = i ? currentNode.children[i] : currentNode.children[0];
@@ -124,22 +131,26 @@ function hydrateNode(
 /**
  * Handle getting the internals
  */
-export function getInternals(): Internals {
+export function getInternals(): Internals['current'] {
     if (typeof document !== 'undefined') {
         // @ts-ignore
-        return window._internals;
+        return window._internals.current;
     }
-    // Fake some internals for the server
-    return {
-        state: [],
-        registry: [],
-        register: (state) => {
-            return { key: 0, state };
-        },
-        render: () => {
-            throw new Error('Rendering is not supported in the server');
+    const serverState: Record<number, any> = {};
+    const serverInternals: Internals = {
+        current: {
+            register: (state) => {
+                const key = Math.random();
+                serverState[key] = state;
+                return key;
+            },
+            set: () => {
+                throw new Error('Rendering is not supported in the server');
+            },
+            get: (key) => serverState[key],
         },
     };
+    return serverInternals.current;
 }
 
 /**
@@ -149,16 +160,12 @@ export function getInternals(): Internals {
 export default function hydrate(component: ComponentType) {
     // @ts-ignore
     window._internals = internals;
-    const el = document.body.children[0];
-    const node: Node<any> = {
+    const root = document.body.children[0];
+    const hydrated = {
         type: component,
-        attributes: {} as any,
+        attributes: {},
+        el: root,
     };
-    const hydratedNode: HydratedNode<any> = {
-        type: node.type,
-        attributes: node.attributes,
-        el,
-    };
-    updateRegister(hydratedNode);
-    hydrateNode(node, hydratedNode);
+    updateInternals(hydrated);
+    hydrateNode(component({}), hydrated);
 }

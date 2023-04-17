@@ -2,7 +2,6 @@ import { ref } from '@/lib/client.ts';
 
 export default function Counter() {
     const count = ref(0);
-    console.log(count.value);
     return (
         <div>
             <button onclick={() => count.value--}>-</button>
