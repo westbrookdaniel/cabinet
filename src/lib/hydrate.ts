@@ -49,9 +49,10 @@ export const internals: Internals = {
 function updateRegister(node: HydratedNode<any>) {
     // TODO: do i pop here? how does react manage their context stack?
     // this is pretty broken
-    internals.register = (initialValue) => {
-        internals.registry.set(key, { node, state: initialValue });
-        return initialValue;
+    internals.register = (state) => {
+        const key = internals.registry.length; // Index of item to be added
+        internals.registry.push({ node, state });
+        return { key, state };
     };
 }
 
@@ -127,9 +128,14 @@ export function getInternals(): Internals {
         // @ts-ignore
         return window._internals;
     }
+    // Fake some internals for the server
     return {
-        registry: new Map(),
-        register: (_, v) => v,
+        registry: [],
+        register: (state) => {
+            const key = internals.registry.length; // Index of item to be added
+            internals.registry.push({ node: null as any, state });
+            return { key, state };
+        },
         render: () => {
             throw new Error('Rendering is not supported in the server');
         },
