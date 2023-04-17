@@ -5,21 +5,21 @@ export function traverse(
     children: string | Node<any> | (Node<any> | string)[],
     handlers: {
         // deno-lint-ignore no-explicit-any
-        node: (child: Node<any>, i?: number) => void;
-        string: (child: string, i?: number) => void;
+        node?: (child: Node<any>, i?: number) => void;
+        string?: (child: string, i?: number) => void;
     },
 ) {
     if (typeof children === 'string') {
-        handlers.string(children);
+        handlers.string?.(children);
     } else if (Array.isArray(children)) {
         children.flat().forEach((child, i) => {
-            if (typeof child === 'string') {
-                handlers.string(child, i);
+            if (typeof child === 'object') {
+                handlers.node?.(child, i);
             } else {
-                handlers.node(child, i);
+                handlers.string?.(child, i);
             }
         });
     } else {
-        handlers.node(children);
+        handlers.node?.(children);
     }
 }

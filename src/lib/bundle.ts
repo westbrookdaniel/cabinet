@@ -29,6 +29,8 @@ async function ensureEsbuildInitialized() {
     }
 }
 
+const isDev = true;
+
 export async function bundleFiles(sourcefiles: string[]) {
     await ensureEsbuildInitialized();
 
@@ -39,24 +41,12 @@ export async function bundleFiles(sourcefiles: string[]) {
         jsx: 'automatic',
         jsxImportSource: '@/lib',
         treeShaking: true,
-        minify: true,
-        minifyWhitespace: true,
-        minifyIdentifiers: true,
+        minify: !isDev,
+        minifyWhitespace: !isDev,
+        minifyIdentifiers: !isDev,
         absWorkingDir: Deno.cwd(),
         outdir: '.',
         outfile: '',
-        loader: {
-            '.ts': 'ts',
-            '.tsx': 'tsx',
-            '.json': 'json',
-            '.css': 'css',
-            '.txt': 'text',
-            '.png': 'dataurl',
-            '.jpg': 'dataurl',
-            '.gif': 'dataurl',
-            '.svg': 'dataurl',
-            '.ico': 'dataurl',
-        },
         platform: 'neutral',
         target: ['chrome99', 'firefox99', 'safari15'],
         plugins: [denoPlugin({

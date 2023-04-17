@@ -1,3 +1,9 @@
+export interface Internals {
+    registry: { node: HydratedNode<any>; state: any }[];
+    register: <T>(value: T) => { key: number; state: T };
+    render: <T>(key: number, value: T) => void;
+}
+
 export interface PageMeta {
     hydrate?: boolean;
 }
@@ -11,9 +17,13 @@ export interface ModuleMap {
     [key: string]: PageType;
 }
 
+export type HydratedNode<T extends keyof HTMLElementTagNameMap> = Node<T> & {
+    el: Element;
+};
+
 // Node can also be string? or null maybe?
 export type Node<T extends keyof HTMLElementTagNameMap> = {
-    nodeName: T;
+    type: T | ComponentType;
     attributes: Omit<HTMLElementTagNameMap[T], 'children' | 'style'> & {
         // deno-lint-ignore no-explicit-any
         children: (Node<any> | string)[] | Node<any> | string;
@@ -52,8 +62,8 @@ declare global {
             [T in keyof HTMLElementTagNameMap]: ElementProps<T>;
         };
 
-        // deno-lint-ignore no-empty-interface no-explicit-any
-        export interface Element extends Node<any> {}
+        // deno-lint-ignore no-explicit-any
+        export type Element = Node<any>;
 
         // deno-lint-ignore no-explicit-any
         export type ElementType<P = any> =

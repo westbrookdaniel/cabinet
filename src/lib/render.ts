@@ -1,10 +1,13 @@
 import type { ModuleMap, Node } from '@/lib/types.ts';
-import { traverse } from '@/lib/tranverse.ts';
+import { traverse } from '@/lib/traverse.ts';
 
 const TEMPLATE = await Deno.readTextFile('./src/index.html');
 
-// deno-lint-ignore no-explicit-any
-export function serializeNode(vnode: Node<any>): string {
+export function serializeNode(vnode: Node<keyof HTMLElementTagNameMap>): string {
+    if (typeof vnode.type === 'function') {
+        return serializeNode(vnode.type(vnode.attributes));
+    }
+
     const children = vnode.attributes.children;
     let childrenStr = '';
     if (children) {
@@ -22,7 +25,7 @@ export function serializeNode(vnode: Node<any>): string {
         attributeStr += ` ${key}="${value}"`;
     });
 
-    return `<${vnode.nodeName}${attributeStr}>${childrenStr}</${vnode.nodeName}>`;
+    return `<${vnode.type}${attributeStr}>${childrenStr}</${vnode.type}>`;
 }
 
 async function getPageDataForPath(modules: ModuleMap, path: string) {

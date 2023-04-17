@@ -7,9 +7,9 @@ function jsx<K extends keyof HTMLElementTagNameMap>(
     attributes: any, // children is Node
 ): Node<K> {
     if (typeof elementType === 'function') {
-        return elementType(attributes);
+        return { type: elementType, attributes };
     }
-    return { nodeName: elementType, attributes };
+    return { type: elementType, attributes };
 }
 
 // deno-lint-ignore no-explicit-any
