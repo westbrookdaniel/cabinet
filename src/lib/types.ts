@@ -1,5 +1,7 @@
 export interface Internals {
     current: {
+        previousContext: any[] | null;
+        context: any[];
         register: <T>(value: T) => number;
         get: <T>(key: number) => T;
         set: <T>(key: number, newValue: T) => void;

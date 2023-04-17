@@ -28,6 +28,8 @@ function serializeNode(vnode: Node<any>): string {
 
 export const internals: Internals = {
     current: {
+        context: [],
+        previousContext: [],
         register: () => {
             throw new Error('Register function not set');
         },
@@ -40,39 +42,32 @@ export const internals: Internals = {
     },
 };
 
-const context = new Map();
-
-function updateInternals(node: HydratedNode<any>) {
-    internals.current = {
+// TODO: Move the tracking of these into a weak map for each node
+// should be more reliable with better cleanup?
+function updateInternals(node: HydratedNode<any>, previousContext: any[] | null = null) {
+    const internalsForNode: Internals['current'] = {
+        previousContext,
+        context: [],
         register: (initialState) => {
-            // TODO: How to tell if it's first register call or not?
-            console.log('reg', initialState, context.get(node));
-            if (context.has(node)) {
-                const localContext = context.get(node);
-                const key = localContext.length;
-                localContext.push(initialState);
-                console.log('reg-new', [...localContext]);
-                return key;
-            } else {
-                context.set(node, [initialState]);
-                return 0;
-            }
+            const localContext = internalsForNode.context;
+            const key = localContext.length;
+            localContext.push(initialState);
+            return key;
         },
         set: (key, newValue) => {
-            console.log('set', node.el, newValue, [...context.get(node)]);
-
-            const previousLocalContext = context.get(node);
-            previousLocalContext[key] = newValue;
-
-            context.set(node, []);
-
+            console.log(node.el, 'set', key, newValue);
+            const newState = internalsForNode.context;
+            newState[key] = newValue;
+            updateInternals(node, [...newState]);
             const html = serializeNode(node);
-            console.log(html);
+            node.el.innerHTML = html;
         },
         get: (key) => {
-            return context.get(node)[key];
+            if (internalsForNode.previousContext) return internalsForNode.previousContext[key];
+            return internalsForNode.context[key];
         },
     };
+    internals.current = internalsForNode;
 }
 
 /**
@@ -90,8 +85,10 @@ function hydrateNode(
     if (typeof node.type === 'function') {
         // Update the internals to the current node
         updateInternals(hydratedNode);
+        // Render the component
         const component = node.type as ComponentType;
         const componentNode = component(node.attributes);
+        // Continue the hydration
         const hydratedComponent = hydrateNode(componentNode, {
             type: componentNode.type,
             attributes: componentNode.attributes,
@@ -99,6 +96,7 @@ function hydrateNode(
             // deno-lint-ignore no-explicit-any
         } as any);
         hydratedNode.attributes.children = hydratedComponent;
+
         return hydratedNode;
     }
 
@@ -150,6 +148,8 @@ export function getInternals(): Internals['current'] {
     const serverState: Record<number, any> = {};
     const serverInternals: Internals = {
         current: {
+            context: [],
+            previousContext: [],
             register: (state) => {
                 const key = Math.random();
                 serverState[key] = state;
