@@ -44,19 +44,30 @@ const context = new Map();
 
 function updateInternals(node: HydratedNode<any>) {
     internals.current = {
-        register: (state) => {
+        register: (initialState) => {
+            // TODO: How to tell if it's first render or not?
+            console.log('reg', initialState, context.get(node));
             if (context.has(node)) {
                 const localContext = context.get(node);
                 const key = localContext.length;
-                localContext.push(state);
+                localContext.push(initialState);
+                console.log('reg-new', [...localContext]);
                 return key;
             } else {
-                context.set(node, [state]);
+                context.set(node, [initialState]);
                 return 0;
             }
         },
         set: (key, newValue) => {
-            console.log(node.el, newValue, context.get(node));
+            console.log('set', node.el, newValue, [...context.get(node)]);
+
+            const previousLocalContext = context.get(node);
+            previousLocalContext[key] = newValue;
+
+            context.set(node, []);
+
+            const html = serializeNode(node);
+            console.log(html);
         },
         get: (key) => {
             return context.get(node)[key];
