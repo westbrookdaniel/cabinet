@@ -45,7 +45,7 @@ const context = new Map();
 function updateInternals(node: HydratedNode<any>) {
     internals.current = {
         register: (initialState) => {
-            // TODO: How to tell if it's first render or not?
+            // TODO: How to tell if it's first register call or not?
             console.log('reg', initialState, context.get(node));
             if (context.has(node)) {
                 const localContext = context.get(node);
