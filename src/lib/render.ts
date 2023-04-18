@@ -3,12 +3,12 @@ import { traverse } from '@/lib/traverse.ts';
 
 const TEMPLATE = await Deno.readTextFile('./src/index.html');
 
-export function serializeNode(vnode: Node<keyof HTMLElementTagNameMap>): string {
-    if (typeof vnode.type === 'function') {
-        return serializeNode(vnode.type(vnode.attributes));
+export function serializeNode(node: Node<keyof HTMLElementTagNameMap>): string {
+    if (typeof node.type === 'function') {
+        return serializeNode(node.type(node.attributes));
     }
 
-    const children = vnode.attributes.children;
+    const children = node.attributes.children;
     let childrenStr = '';
     if (children) {
         traverse(children, {
@@ -18,14 +18,14 @@ export function serializeNode(vnode: Node<keyof HTMLElementTagNameMap>): string 
     }
 
     let attributeStr = '';
-    Object.entries(vnode.attributes).forEach(([key, value]) => {
+    Object.entries(node.attributes).forEach(([key, value]) => {
         if (value === undefined) return; // Ignore undefined
         if (key === 'children') return; // Ignore children
         if (key.startsWith('on')) return; // Ignore events
         attributeStr += ` ${key}="${value}"`;
     });
 
-    return `<${vnode.type}${attributeStr}>${childrenStr}</${vnode.type}>`;
+    return `<${node.type}${attributeStr}>${childrenStr}</${node.type}>`;
 }
 
 async function getPageDataForPath(modules: ModuleMap, path: string) {

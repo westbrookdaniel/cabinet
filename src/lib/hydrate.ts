@@ -1,72 +1,29 @@
 import type { ComponentType, HydratedNode, Internals, Node } from '@/lib/types.ts';
 import { traverse } from '@/lib/traverse.ts';
 
-/**
- * TODO: This is broken
- * This re-runs a hydrated node
- */
-function renderNode(
-    node: HydratedNode<any>,
-    previousNode = node,
-): HydratedNode<any> {
-    const currentEl = previousNode?.el;
-
-    // If the node is a component, hydrate the component
+export function serializeNode(node: Node<keyof HTMLElementTagNameMap>): string {
     if (typeof node.type === 'function') {
-        // Update the internals to the current node
-        updateInternals(previousNode);
-        // Render the component
-        const component = node.type as ComponentType;
-        const componentNode = component(node.attributes);
-        // TODO: Do we need to be doing node creation? or diffing here?
-        // Continue the hydration
-        const hydratedComponent = hydrateNode(componentNode, {
-            type: componentNode.type,
-            attributes: componentNode.attributes,
-            el: currentEl,
-            // deno-lint-ignore no-explicit-any
-        } as any);
-        previousNode.attributes.children = hydratedComponent;
-
-        return previousNode;
+        return serializeNode(node.type(node.attributes));
     }
 
-    const hydratedChildren: HydratedNode<keyof HTMLElementTagNameMap>[] = [];
-    traverse(node.attributes.children || [], {
-        node: (child, i) => {
-            // Traverse
-            const childNode = i ? currentEl.children[i] : currentEl.children[0];
-            if (!childNode) return;
-            // TODO: Do we need to be doing node creation? or diffing here?
-            hydratedChildren.push(hydrateNode(child, {
-                type: child.type,
-                attributes: child.attributes,
-                el: childNode,
-                // deno-lint-ignore no-explicit-any
-            }) as any);
-        },
-        // Ignore strings
-    });
-    if (hydratedChildren.length) {
-        previousNode.attributes.children = hydratedChildren;
+    const children = node.attributes.children;
+    let childrenStr = '';
+    if (children) {
+        traverse(children, {
+            node: (child) => childrenStr += serializeNode(child),
+            string: (child) => childrenStr += child,
+        });
     }
 
-    // Check this is roughly the same node
-    if (currentEl.nodeName.toLowerCase() !== node.type) {
-        console.warn('Failed to render, not in sync', node, currentEl);
-        // Break early if the nodes dont match
-        return previousNode;
-    }
-
-    // Apply event listeners
-    // Any code that modifies the dom will be run too
+    let attributeStr = '';
     Object.entries(node.attributes).forEach(([key, value]) => {
-        if (key.startsWith('on') && typeof value === 'function') {
-            currentEl.addEventListener(key.slice(2), value as EventListener);
-        }
+        if (value === undefined) return; // Ignore undefined
+        if (key === 'children') return; // Ignore children
+        if (key.startsWith('on')) return; // Ignore events
+        attributeStr += ` ${key}="${value}"`;
     });
 
-    return previousNode;
+    return `<${node.type}${attributeStr}>${childrenStr}</${node.type}>`;
 }
 
 export const internals: Internals = {
@@ -109,15 +66,14 @@ function updateInternals(node: HydratedNode<any>, previousContext: any[] | null 
                 return key;
             },
             set: (key, newValue) => {
-                console.log(node.el, 'set', key, newValue);
                 const newState = internalsForNode.context;
                 newState[key] = newValue;
                 updateInternals(node, [...newState]);
-                const el = renderNode(node).el;
-                node.el.replaceWith(el);
+                const done = hydrateNode(true, node);
+                console.log('DONE', done);
+                node.el.replaceWith(done.el);
             },
             get: (key) => {
-                console.log('get', node, internalsForNode, key);
                 if (internalsForNode.previousContext) return internalsForNode.previousContext[key];
                 return internalsForNode.context[key];
             },
@@ -134,23 +90,26 @@ function updateInternals(node: HydratedNode<any>, previousContext: any[] | null 
  * Will break if the dom is not the same as the virtual dom
  */
 function hydrateNode(
-    node: Node<any>,
+    shouldCreate: boolean,
     hydratedNode: HydratedNode<any>,
 ): HydratedNode<any> {
-    const currentEl = hydratedNode?.el;
-
     // If the node is a component, hydrate the component
-    if (typeof node.type === 'function') {
+    if (typeof hydratedNode.type === 'function') {
+        console.log('UNWRAP', hydratedNode);
+
         // Update the internals to the current node
         updateInternals(hydratedNode);
         // Render the component
-        const component = node.type as ComponentType;
-        const componentNode = component(node.attributes);
+        const component = hydratedNode.type as ComponentType;
+        const componentNode = component(hydratedNode.attributes);
+
         // Continue the hydration
-        const hydratedComponent = hydrateNode(componentNode, {
+        const hydratedComponent = hydrateNode(shouldCreate, {
             type: componentNode.type,
             attributes: componentNode.attributes,
-            el: currentEl,
+            // Don't use currentEl since we never want to create here
+            // This is more for unwrapping the component
+            el: hydratedNode?.el,
             // deno-lint-ignore no-explicit-any
         } as any);
         hydratedNode.attributes.children = hydratedComponent;
@@ -158,13 +117,22 @@ function hydrateNode(
         return hydratedNode;
     }
 
+    if (shouldCreate) hydratedNode.el = document.createElement(hydratedNode.type);
+    const currentEl = hydratedNode.el;
+    console.log('CREATE', hydratedNode);
+
     const hydratedChildren: HydratedNode<keyof HTMLElementTagNameMap>[] = [];
-    traverse(node.attributes.children || [], {
+    traverse(hydratedNode.attributes.children || [], {
         node: (child, i) => {
             // Traverse
             const childNode = i ? currentEl.children[i] : currentEl.children[0];
-            if (!childNode) return;
-            hydratedChildren.push(hydrateNode(child, {
+
+            // TODO: Need to create an element if shouldCreate here?
+            // Think the fix is moving hydrateNode to have a new argument for parentNode,
+            // and moving hydratedNode to just be node
+            console.log(child, childNode);
+
+            hydratedChildren.push(hydrateNode(shouldCreate, {
                 type: child.type,
                 attributes: child.attributes,
                 el: childNode,
@@ -178,17 +146,23 @@ function hydrateNode(
     }
 
     // Check this is roughly the same node
-    if (currentEl.nodeName.toLowerCase() !== node.type) {
-        console.warn('Hydration failed, nodes dont match', node, currentEl);
+    if (currentEl.nodeName.toLowerCase() !== hydratedNode.type) {
+        console.warn('Hydration failed, nodes dont match', hydratedNode, currentEl);
         // Break early if the nodes dont match
         return hydratedNode;
     }
 
-    // Apply event listeners
+    // Apply attributes
     // Any code that modifies the dom will be run too
-    Object.entries(node.attributes).forEach(([key, value]) => {
+    Object.entries(hydratedNode.attributes).forEach(([key, value]) => {
+        if (key === 'children') return;
+        if (value === undefined) return;
         if (key.startsWith('on') && typeof value === 'function') {
-            currentEl.addEventListener(key.slice(2), value as EventListener);
+            return currentEl.addEventListener(key.slice(2), value as EventListener);
+        }
+        // Don't bother setting if we're not creating
+        if (shouldCreate) {
+            currentEl.setAttribute(key, value);
         }
     });
 
@@ -236,5 +210,5 @@ export default function hydrate(component: ComponentType) {
         el: root,
     };
     updateInternals(hydrated);
-    hydrateNode(component({}), hydrated);
+    hydrateNode(false, hydrated);
 }
