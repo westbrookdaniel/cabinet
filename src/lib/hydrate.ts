@@ -70,7 +70,6 @@ function updateInternals(node: HydratedNode<any>, previousContext: any[] | null 
                 newState[key] = newValue;
                 updateInternals(node, [...newState]);
                 const done = hydrateNode(true, node);
-                console.log('DONE', done);
                 node.el.replaceWith(done.el);
             },
             get: (key) => {
@@ -88,6 +87,11 @@ function updateInternals(node: HydratedNode<any>, previousContext: any[] | null 
  * Similar structure to createNode but traverses the dom
  * to apply event listeners and hook up the virtual dom to the real dom
  * Will break if the dom is not the same as the virtual dom
+ *
+ * TODO: Change hydrates args to be:
+ * - hydratedNode: The node with existing el
+ * - newParentEl?: The new tree being made, once hydrated node has been handled
+ *      the new created el needs to be appended to this. It also needs to be moved to hydrateNode
  */
 function hydrateNode(
     shouldCreate: boolean,
@@ -95,8 +99,6 @@ function hydrateNode(
 ): HydratedNode<any> {
     // If the node is a component, hydrate the component
     if (typeof hydratedNode.type === 'function') {
-        console.log('UNWRAP', hydratedNode);
-
         // Update the internals to the current node
         updateInternals(hydratedNode);
         // Render the component
@@ -119,18 +121,12 @@ function hydrateNode(
 
     if (shouldCreate) hydratedNode.el = document.createElement(hydratedNode.type);
     const currentEl = hydratedNode.el;
-    console.log('CREATE', hydratedNode);
 
     const hydratedChildren: HydratedNode<keyof HTMLElementTagNameMap>[] = [];
     traverse(hydratedNode.attributes.children || [], {
         node: (child, i) => {
             // Traverse
             const childNode = i ? currentEl.children[i] : currentEl.children[0];
-
-            // TODO: Need to create an element if shouldCreate here?
-            // Think the fix is moving hydrateNode to have a new argument for parentNode,
-            // and moving hydratedNode to just be node
-            console.log(child, childNode);
 
             hydratedChildren.push(hydrateNode(shouldCreate, {
                 type: child.type,
