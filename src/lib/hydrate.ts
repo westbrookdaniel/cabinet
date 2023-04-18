@@ -1,32 +1,72 @@
 import type { ComponentType, HydratedNode, Internals, Node } from '@/lib/types.ts';
 import { traverse } from '@/lib/traverse.ts';
 
-// Need to make this a lot more like hydrated node
-// but creating elements with dom methods too
-function serializeNode(vnode: Node<any>): string {
-    if (typeof vnode.type === 'function') {
-        // Add update internals here
-        return serializeNode(vnode.type(vnode.attributes));
+/**
+ * TODO: This is broken
+ * This re-runs a hydrated node
+ */
+function renderNode(
+    node: HydratedNode<any>,
+    previousNode = node,
+): HydratedNode<any> {
+    const currentEl = previousNode?.el;
+
+    // If the node is a component, hydrate the component
+    if (typeof node.type === 'function') {
+        // Update the internals to the current node
+        updateInternals(previousNode);
+        // Render the component
+        const component = node.type as ComponentType;
+        const componentNode = component(node.attributes);
+        // TODO: Do we need to be doing node creation? or diffing here?
+        // Continue the hydration
+        const hydratedComponent = hydrateNode(componentNode, {
+            type: componentNode.type,
+            attributes: componentNode.attributes,
+            el: currentEl,
+            // deno-lint-ignore no-explicit-any
+        } as any);
+        previousNode.attributes.children = hydratedComponent;
+
+        return previousNode;
     }
 
-    const children = vnode.attributes.children;
-    let childrenStr = '';
-    if (children) {
-        traverse(children, {
-            node: (child) => childrenStr += serializeNode(child),
-            string: (child) => childrenStr += child,
-        });
+    const hydratedChildren: HydratedNode<keyof HTMLElementTagNameMap>[] = [];
+    traverse(node.attributes.children || [], {
+        node: (child, i) => {
+            // Traverse
+            const childNode = i ? currentEl.children[i] : currentEl.children[0];
+            if (!childNode) return;
+            // TODO: Do we need to be doing node creation? or diffing here?
+            hydratedChildren.push(hydrateNode(child, {
+                type: child.type,
+                attributes: child.attributes,
+                el: childNode,
+                // deno-lint-ignore no-explicit-any
+            }) as any);
+        },
+        // Ignore strings
+    });
+    if (hydratedChildren.length) {
+        previousNode.attributes.children = hydratedChildren;
     }
 
-    let attributeStr = '';
-    Object.entries(vnode.attributes).forEach(([key, value]) => {
-        if (value === undefined) return; // Ignore undefined
-        if (key === 'children') return; // Ignore children
-        if (key.startsWith('on')) return; // Ignore events
-        attributeStr += ` ${key}="${value}"`;
+    // Check this is roughly the same node
+    if (currentEl.nodeName.toLowerCase() !== node.type) {
+        console.warn('Failed to render, not in sync', node, currentEl);
+        // Break early if the nodes dont match
+        return previousNode;
+    }
+
+    // Apply event listeners
+    // Any code that modifies the dom will be run too
+    Object.entries(node.attributes).forEach(([key, value]) => {
+        if (key.startsWith('on') && typeof value === 'function') {
+            currentEl.addEventListener(key.slice(2), value as EventListener);
+        }
     });
 
-    return `<${vnode.type}${attributeStr}>${childrenStr}</${vnode.type}>`;
+    return previousNode;
 }
 
 export const internals: Internals = {
@@ -47,6 +87,11 @@ export const internals: Internals = {
 
 const internalsInUse = new WeakMap<Element, Internals['current']>();
 
+/**
+ * Creates new internals for the current node
+ * If there is already an interanal in use for the hydrated
+ * node's element it uses that instead
+ */
 function updateInternals(node: HydratedNode<any>, previousContext: any[] | null = null) {
     if (internalsInUse.has(node.el)) {
         const internalsForNode = internalsInUse.get(node.el)!;
@@ -68,9 +113,8 @@ function updateInternals(node: HydratedNode<any>, previousContext: any[] | null 
                 const newState = internalsForNode.context;
                 newState[key] = newValue;
                 updateInternals(node, [...newState]);
-                const html = serializeNode(node);
-                console.log(html);
-                node.el.innerHTML = html;
+                const el = renderNode(node).el;
+                node.el.replaceWith(el);
             },
             get: (key) => {
                 console.log('get', node, internalsForNode, key);
@@ -93,7 +137,7 @@ function hydrateNode(
     node: Node<any>,
     hydratedNode: HydratedNode<any>,
 ): HydratedNode<any> {
-    const currentNode = hydratedNode?.el;
+    const currentEl = hydratedNode?.el;
 
     // If the node is a component, hydrate the component
     if (typeof node.type === 'function') {
@@ -106,7 +150,7 @@ function hydrateNode(
         const hydratedComponent = hydrateNode(componentNode, {
             type: componentNode.type,
             attributes: componentNode.attributes,
-            el: currentNode,
+            el: currentEl,
             // deno-lint-ignore no-explicit-any
         } as any);
         hydratedNode.attributes.children = hydratedComponent;
@@ -118,7 +162,7 @@ function hydrateNode(
     traverse(node.attributes.children || [], {
         node: (child, i) => {
             // Traverse
-            const childNode = i ? currentNode.children[i] : currentNode.children[0];
+            const childNode = i ? currentEl.children[i] : currentEl.children[0];
             if (!childNode) return;
             hydratedChildren.push(hydrateNode(child, {
                 type: child.type,
@@ -134,8 +178,8 @@ function hydrateNode(
     }
 
     // Check this is roughly the same node
-    if (currentNode.nodeName.toLowerCase() !== node.type) {
-        console.warn('Hydration failed, nodes dont match', node, currentNode);
+    if (currentEl.nodeName.toLowerCase() !== node.type) {
+        console.warn('Hydration failed, nodes dont match', node, currentEl);
         // Break early if the nodes dont match
         return hydratedNode;
     }
@@ -144,7 +188,7 @@ function hydrateNode(
     // Any code that modifies the dom will be run too
     Object.entries(node.attributes).forEach(([key, value]) => {
         if (key.startsWith('on') && typeof value === 'function') {
-            currentNode.addEventListener(key.slice(2), value as EventListener);
+            currentEl.addEventListener(key.slice(2), value as EventListener);
         }
     });
 
