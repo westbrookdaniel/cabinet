@@ -50,6 +50,7 @@ const internalsInUse = new WeakMap<Element, Internals['current']>();
  * node's element it uses that instead
  */
 function updateInternals(node: HydratedNode<any>, previousContext: any[] | null = null) {
+    console.log(node);
     if (internalsInUse.has(node.el)) {
         const internalsForNode = internalsInUse.get(node.el)!;
         internalsForNode.previousContext = previousContext;
@@ -127,6 +128,8 @@ function hydrateNode(
         node: (child, i) => {
             // Traverse
             const childNode = i ? currentEl.children[i] : currentEl.children[0];
+
+            if (!childNode) return;
 
             hydratedChildren.push(hydrateNode(shouldCreate, {
                 type: child.type,
