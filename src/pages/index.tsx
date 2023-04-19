@@ -1,5 +1,5 @@
 import TodoItem from '@/components/TodoItem.tsx';
-import { ref } from '@/lib/client.ts';
+import { memo, ref } from '@/lib/client.ts';
 import Counter from '@/components/Counter.tsx';
 import type { PageType } from '@/lib/types.ts';
 
@@ -16,11 +16,11 @@ const Home: PageType = () => {
         { id: 3, text: 'Improve performance', done: false },
     ]);
 
-    function onToggle(id: number) {
+    const onToggle = memo(() => (id: number) => {
         todos.value = todos.value.map((t) => {
             return t.id === id ? { ...t, done: !t.done } : t;
         });
-    }
+    });
 
     return (
         <div>

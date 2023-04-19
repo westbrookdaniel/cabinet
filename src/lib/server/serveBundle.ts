@@ -10,7 +10,7 @@ export async function serveBundle(path: string) {
     }
 
     // path is something like bundle/pages/index.js
-    const pathToBundle = '../' + path;
+    const pathToBundle = '../../' + path;
 
     // find the original file extension
     let ext: string | null = null;

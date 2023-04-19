@@ -50,7 +50,7 @@ export async function bundleFiles(sourcefiles: string[]) {
         platform: 'neutral',
         target: ['chrome99', 'firefox99', 'safari15'],
         plugins: [denoPlugin({
-            importMapURL: new URL('../../import_map.json', import.meta.url),
+            importMapURL: new URL('../../../import_map.json', import.meta.url),
         })],
         write: false,
     });
