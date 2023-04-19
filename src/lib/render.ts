@@ -56,13 +56,13 @@ async function getPageDataForPath(modules: ModuleMap, path: string) {
 
 export async function render(modules: ModuleMap, url: URL): Promise<string> {
     const page = await getPageDataForPath(modules, url.pathname);
-    const vnode = page.component({});
 
     const shouldHydrate = page.meta?.hydrate !== false;
+    const clientOnly = page.meta?.clientOnly === true;
 
     const uglyTemplate = TEMPLATE.replace(/<!--(.*?)-->|\s\B/gm, '');
 
-    return uglyTemplate.replace('{{app}}', serializeNode(vnode)).replace(
+    return uglyTemplate.replace('{{app}}', clientOnly ? '' : serializeNode(page.component({}))).replace(
         '{{scripts}}',
         shouldHydrate
             ? `<script type="module">import h from './bundle/lib/hydrate.js';import p from './bundle/pages/${page.fileName}.js';h(p);</script>`

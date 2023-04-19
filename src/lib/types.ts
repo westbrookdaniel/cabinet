@@ -10,6 +10,7 @@ export interface Internals {
 
 export interface PageMeta {
     hydrate?: boolean;
+    clientOnly?: boolean;
 }
 
 export type PageType = ComponentType & { meta?: PageMeta };
