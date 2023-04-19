@@ -9,6 +9,9 @@ function renderNode(node: Node, previousParentEl: Element): Element {
         /**
          * Currently this is being passed the previousParentEl which allows us to get the context of the previous render
          * Issue is that we don't pass it the new element so the next render everything breaks
+         *
+         * Perhaps we should try and update the child elements instead of replacing them
+         * That way we can keep the context and possibly improve performance
          */
         updateInternals(node, previousParentEl);
         return renderNode(node.type(node.attributes), previousParentEl);
