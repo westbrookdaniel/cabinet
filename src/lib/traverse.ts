@@ -1,11 +1,7 @@
-import type { Node } from '@/lib/types.ts';
-
-export function traverse(
-    // deno-lint-ignore no-explicit-any
-    children: string | Node<any> | (Node<any> | string)[],
+export function traverse<N>(
+    children: string | N | (N | string)[],
     handlers: {
-        // deno-lint-ignore no-explicit-any
-        node?: (child: Node<any>, i?: number) => void;
+        node?: (child: N, i?: number) => void;
         string?: (child: string, i?: number) => void;
     },
 ) {
@@ -14,9 +10,9 @@ export function traverse(
     } else if (Array.isArray(children)) {
         children.flat().forEach((child, i) => {
             if (typeof child === 'object') {
-                handlers.node?.(child, i);
+                handlers.node?.(child as any, i);
             } else {
-                handlers.string?.(child, i);
+                handlers.string?.(child as any, i);
             }
         });
     } else {

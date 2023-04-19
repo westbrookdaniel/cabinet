@@ -21,12 +21,8 @@ export interface ModuleMap {
     [key: string]: PageType;
 }
 
-export type HydratedNode<T extends keyof HTMLElementTagNameMap> = Node<T> & {
-    el: Element;
-};
-
 // Node can also be string? or null maybe?
-export type Node<T extends keyof HTMLElementTagNameMap> = {
+export type Node<T extends keyof HTMLElementTagNameMap = any> = {
     type: T | ComponentType;
     attributes: Omit<HTMLElementTagNameMap[T], 'children' | 'style'> & {
         // deno-lint-ignore no-explicit-any
