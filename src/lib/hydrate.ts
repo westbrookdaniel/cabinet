@@ -50,7 +50,10 @@ export const internals: Internals = {
     },
 };
 
-const internalsInUse = new Map<Element, Internals['current']>();
+/**
+ * Map of elements to their internals
+ */
+const internalsInUse = new WeakMap<Element, Internals['current']>();
 
 /**
  * Creates new internals for the current node
@@ -134,17 +137,39 @@ export function getInternals(): Internals['current'] {
 }
 
 /**
+ * Map of elements to their event listeners
+ */
+const listenersInUse = new WeakMap<Element, [string, EventListenerOrEventListenerObject][]>();
+
+/**
  * Applies attributes of a node to a dom element
  */
 function applyAttributes(node: Node, el: Element) {
+    // Remove old listeners
+    if (listenersInUse.has(el)) {
+        const oldListeners = listenersInUse.get(el)!;
+        oldListeners.forEach(([eventType, listener]) => {
+            el.removeEventListener(eventType, listener);
+        });
+        // Remove from listeners in use
+        listenersInUse.delete(el);
+    }
+
     // Apply attributes
     // Any code that modifies the dom will be run too
     Object.entries(node.attributes).forEach(([key, value]) => {
         if (key === 'children') return;
         if (value === undefined) return;
         if (key.startsWith('on') && typeof value === 'function') {
-            // TODO: Currently this isn't cleaning up any previous event listeners
-            return el.addEventListener(key.slice(2), value as EventListener);
+            const eventType = key.slice(2);
+            el.addEventListener(eventType, value as EventListener);
+
+            // Add to listeners in use for cleanup next time
+            if (!listenersInUse.has(el)) {
+                listenersInUse.set(el, [[eventType, value]]);
+            } else {
+                listenersInUse.get(el)!.push([eventType, value]);
+            }
         }
         el.setAttribute(key, value);
     });
