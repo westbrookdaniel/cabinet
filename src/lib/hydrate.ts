@@ -50,7 +50,6 @@ const internalsInUse = new WeakMap<Element, Internals['current']>();
  * node's element it uses that instead
  */
 function updateInternals(node: HydratedNode<any>, previousContext: any[] | null = null) {
-    console.log(node);
     if (internalsInUse.has(node.el)) {
         const internalsForNode = internalsInUse.get(node.el)!;
         internalsForNode.previousContext = previousContext;
@@ -70,8 +69,7 @@ function updateInternals(node: HydratedNode<any>, previousContext: any[] | null 
                 const newState = internalsForNode.context;
                 newState[key] = newValue;
                 updateInternals(node, [...newState]);
-                const done = hydrateNode(true, node);
-                node.el.replaceWith(done.el);
+                hydrateNode(true, node);
             },
             get: (key) => {
                 if (internalsForNode.previousContext) return internalsForNode.previousContext[key];
@@ -95,8 +93,9 @@ function updateInternals(node: HydratedNode<any>, previousContext: any[] | null 
  *      the new created el needs to be appended to this. It also needs to be moved to hydrateNode
  */
 function hydrateNode(
-    shouldCreate: boolean,
+    isCreating: boolean,
     hydratedNode: HydratedNode<any>,
+    newEl?: Element,
 ): HydratedNode<any> {
     // If the node is a component, hydrate the component
     if (typeof hydratedNode.type === 'function') {
@@ -107,20 +106,30 @@ function hydrateNode(
         const componentNode = component(hydratedNode.attributes);
 
         // Continue the hydration
-        const hydratedComponent = hydrateNode(shouldCreate, {
+        const hydratedComponent = hydrateNode(isCreating, {
             type: componentNode.type,
             attributes: componentNode.attributes,
             // Don't use currentEl since we never want to create here
             // This is more for unwrapping the component
             el: hydratedNode?.el,
             // deno-lint-ignore no-explicit-any
-        } as any);
+        } as any, newEl);
         hydratedNode.attributes.children = hydratedComponent;
 
         return hydratedNode;
     }
 
-    if (shouldCreate) hydratedNode.el = document.createElement(hydratedNode.type);
+    // If creating and there is no newEl, create a new one
+    // and replace the old one with it
+    // otherwise create new node and append to newEl
+    if (isCreating) {
+        if (!newEl) {
+            newEl = document.createElement(hydratedNode.type);
+            hydratedNode.el.replaceWith(newEl!);
+            hydratedNode.el = newEl!;
+        }
+    }
+
     const currentEl = hydratedNode.el;
 
     const hydratedChildren: HydratedNode<keyof HTMLElementTagNameMap>[] = [];
@@ -129,16 +138,45 @@ function hydrateNode(
             // Traverse
             const childNode = i ? currentEl.children[i] : currentEl.children[0];
 
+            // Different handling for isCreating
+            if (isCreating) {
+                if (typeof child.type === 'function') {
+                    hydratedChildren.push(hydrateNode(isCreating, {
+                        type: child.type,
+                        attributes: child.attributes,
+                        el: hydratedNode.el,
+                        // deno-lint-ignore no-explicit-any
+                    }, newEl) as any);
+                    return;
+                }
+                const newChild = document.createElement(child.type);
+                currentEl.appendChild(newChild);
+                hydratedChildren.push(hydrateNode(isCreating, {
+                    type: child.type,
+                    attributes: child.attributes,
+                    el: newChild,
+                    // deno-lint-ignore no-explicit-any
+                }, newEl) as any);
+                return;
+            }
+
+            // If no child need to break
             if (!childNode) return;
 
-            hydratedChildren.push(hydrateNode(shouldCreate, {
+            hydratedChildren.push(hydrateNode(isCreating, {
                 type: child.type,
                 attributes: child.attributes,
                 el: childNode,
                 // deno-lint-ignore no-explicit-any
-            }) as any);
+            }, newEl) as any);
         },
-        // Ignore strings
+        string: (child) => {
+            if (isCreating) {
+                const newChild = document.createTextNode(child);
+                currentEl.appendChild(newChild);
+                hydratedChildren.push(child as any);
+            }
+        },
     });
     if (hydratedChildren.length) {
         hydratedNode.attributes.children = hydratedChildren;
@@ -160,7 +198,7 @@ function hydrateNode(
             return currentEl.addEventListener(key.slice(2), value as EventListener);
         }
         // Don't bother setting if we're not creating
-        if (shouldCreate) {
+        if (isCreating) {
             currentEl.setAttribute(key, value);
         }
     });
