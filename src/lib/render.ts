@@ -60,11 +60,11 @@ export async function render(modules: ModuleMap, url: URL): Promise<string> {
     const page = await getPageDataForPath(modules, url.pathname);
 
     const shouldHydrate = page.meta?.hydrate !== false;
-    const clientOnly = page.meta?.clientOnly === true;
+    const noSsr = page.meta?.noSsr === true;
 
     const uglyTemplate = TEMPLATE.replace(/<!--(.*?)-->|\s\B/gm, '');
 
-    return uglyTemplate.replace('{{app}}', wrapInRoot(clientOnly ? '' : serializeNode(page.component({}))))
+    return uglyTemplate.replace('{{app}}', wrapInRoot(noSsr ? '' : serializeNode(page.component({}))))
         .replace(
             '{{scripts}}',
             shouldHydrate

@@ -43,8 +43,4 @@ const Home: PageType = () => {
     );
 };
 
-Home.meta = {
-    clientOnly: true,
-};
-
 export default Home;

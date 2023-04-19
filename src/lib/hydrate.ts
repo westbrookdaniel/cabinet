@@ -4,10 +4,17 @@ import { traverse } from '@/lib/traverse.ts';
 /**
  * Creates dom element from a node
  */
-function renderNode(node: Node, previousEl: Element | undefined): Element {
+function renderNode(
+    node: Node,
+    previousEl: Element | undefined,
+    setElement?: (el: Element) => void,
+): Element {
+    // If it's a component call it's render function
+    // If we don't have a previous element we need to create a new one
+    // so we have to set the element for the internals after it's created
     if (typeof node.type === 'function') {
-        if (previousEl) updateInternals(node, previousEl);
-        return renderNode(node.type(node.attributes), previousEl);
+        const setElement = updateInternals(node, previousEl);
+        return renderNode(node.type(node.attributes), previousEl, setElement);
     }
 
     // If the same type just replace the attributes
@@ -16,6 +23,8 @@ function renderNode(node: Node, previousEl: Element | undefined): Element {
     const isSameElement = previousEl?.tagName.toLowerCase() === node.type;
     const el: Element = isSameElement ? previousEl : document.createElement(node.type);
     applyAttributes(node, el);
+    // If we have a set element callback call it to update the internals
+    if (setElement) setElement(el);
 
     const children = node.attributes.children;
     const newChildren: (Element | Text)[] = [];
@@ -61,7 +70,11 @@ const internalsInUse = new WeakMap<Element, Internals['current']>();
  * If there is already an interanal in use for the hydrated
  * node's element it uses that instead
  */
-function updateInternals(node: Node, el?: Element | undefined) {
+function updateInternals(node: Node, el?: undefined): (el: Element) => void;
+function updateInternals(node: Node, el: Element): undefined;
+function updateInternals(node: Node, el?: Element | undefined): ((el: Element) => void) | undefined;
+function updateInternals(node: Node, el?: Element | undefined): ((el: Element) => void) | undefined {
+    // If you pass an element see if there is an existing internals, if so use that
     if (el && internalsInUse.has(el)) {
         const internalsForNode = internalsInUse.get(el)!;
         // Clear the current context read for rendering
@@ -77,27 +90,41 @@ function updateInternals(node: Node, el?: Element | undefined) {
                 localContext.push(initialState);
                 return key;
             },
-            set: (key, newValue) => {
-                internalsForNode.context[key] = newValue;
-                // Save the previous context
-                internalsForNode.previousContext = [...internalsForNode.context];
-                // TODO: How to get this element not at the time of calling updateInternals
-                // So that we can updateInternals -> renderComponent -> create element -> set element for internals
-                // Perhaps more like prepareInternals(node) -> renderComponent -> setElementForInternals(node, el)
-                // We should store the node temporarly in a WeakMap and then remove it after
-                if (!el) throw new Error('Element not found');
-                renderNode(node, el);
-            },
+            set: (k, v) => createInternalsSetter(internalsForNode, node, el)(k, v),
             get: (key) => {
                 if (internalsForNode.previousContext) return internalsForNode.previousContext[key];
                 return internalsForNode.context[key];
             },
         };
 
-        internalsInUse.set(el, internalsForNode);
+        // If we have an element save the internals for it
+        if (el) internalsInUse.set(el, internalsForNode);
         internals.current = internalsForNode;
+
+        // Return a callback to set the element for the internals
+        return (el) => {
+            // Also update the setter to use the new element
+            internalsForNode.set = createInternalsSetter(internalsForNode, node, el);
+            internalsInUse.set(el, internalsForNode);
+        };
     }
 }
+
+/**
+ * This is needed in a couple of places so it's extracted out
+ */
+const createInternalsSetter = (
+    internalsForNode: Internals['current'],
+    node: Node,
+    el: Element | undefined,
+): Internals['current']['set'] =>
+(key, newValue) => {
+    internalsForNode.context[key] = newValue;
+    // Save the previous context
+    internalsForNode.previousContext = [...internalsForNode.context];
+    if (!el) throw new Error('Element not found');
+    renderNode(node, el);
+};
 
 /**
  * Handle getting the internals

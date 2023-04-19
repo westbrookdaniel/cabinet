@@ -12,7 +12,7 @@ export interface Internals {
 
 export interface PageMeta {
     hydrate?: boolean;
-    clientOnly?: boolean;
+    noSsr?: boolean;
 }
 
 export type NoProps = Record<string, never>;
