@@ -1,6 +1,7 @@
 import TodoItem from '@/components/TodoItem.tsx';
 import { ref } from '@/lib/client.ts';
 import Counter from '@/components/Counter.tsx';
+import type { PageType } from '@/lib/types.ts';
 
 export type Todo = {
     id: number;
@@ -8,7 +9,7 @@ export type Todo = {
     done: boolean;
 };
 
-function Home() {
+const Home: PageType = () => {
     const todos = ref([
         { id: 1, text: 'Handle bundling', done: true },
         { id: 2, text: 'Make reactive', done: false },
@@ -40,6 +41,6 @@ function Home() {
             </div>
         </div>
     );
-}
+};
 
 export default Home;

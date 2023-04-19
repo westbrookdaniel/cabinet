@@ -13,10 +13,12 @@ export interface PageMeta {
     clientOnly?: boolean;
 }
 
-export type PageType = ComponentType & { meta?: PageMeta };
+export type NoProps = Record<string, never>;
+
+export type PageType<P = NoProps> = ComponentType<P> & { meta?: PageMeta };
 
 // deno-lint-ignore no-explicit-any
-export type ComponentType<P = any> = <T extends keyof HTMLElementTagNameMap>(props: P) => Node<T>;
+export type ComponentType<P = NoProps> = <T extends keyof HTMLElementTagNameMap>(props: P) => Node<T>;
 
 export interface ModuleMap {
     [key: string]: PageType;
