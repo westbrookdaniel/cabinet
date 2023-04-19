@@ -53,7 +53,7 @@ export const internals: Internals = {
 /**
  * Map of elements to their internals
  */
-const internalsInUse = new Map<Element, Internals['current']>();
+const internalsInUse = new WeakMap<Element, Internals['current']>();
 
 /**
  * Creates new internals for the current node
@@ -125,7 +125,7 @@ export function getInternals(): Internals['current'] {
 /**
  * Map of elements to their event listeners
  */
-const listenersInUse = new Map<Element, [string, EventListenerOrEventListenerObject][]>();
+const listenersInUse = new WeakMap<Element, [string, EventListenerOrEventListenerObject][]>();
 
 /**
  * Applies attributes of a node to a dom element
