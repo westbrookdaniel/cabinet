@@ -16,7 +16,7 @@ const Home: PageType = () => {
         { id: 3, text: 'Improve performance', done: false },
     ]);
 
-    const onToggle = memo(() => (id: number) => {
+    const onToggle = memo([], () => (id: number) => {
         todos.value = todos.value.map((t) => {
             return t.id === id ? { ...t, done: !t.done } : t;
         });

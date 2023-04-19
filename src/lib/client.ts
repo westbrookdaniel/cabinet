@@ -26,12 +26,13 @@ export function ref<T>(initial: T) {
     return v;
 }
 
-export function memo<T>(fn: () => T) {
+// deno-lint-ignore no-explicit-any
+export function memo<T>(_deps: any[], fn: () => T) {
     const internals = getInternals();
     // TODO: How does memoisation work?
     // Pretty sure we need to pass it in as internals.register(fn)
     // and then maybe only call it when inserting into previousContext?
-    // Also might need a deps array? to invalidate by re-setting
+    // Also need to handle deps array to invalidate by re-setting
     const key = internals.register(fn());
     return internals.get<T>(key);
 }
