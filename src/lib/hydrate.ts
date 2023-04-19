@@ -6,20 +6,12 @@ import { traverse } from '@/lib/traverse.ts';
  */
 function renderNode(node: Node, previousEl: Element): Element {
     if (typeof node.type === 'function') {
-        /**
-         * Currently this is being passed the previousParentEl which allows us to get the context of the previous render
-         * Issue is that we don't pass it the new element so the next render everything breaks
-         *
-         * To combat this we try and update the child elements instead of replacing them
-         * That way we can keep the context and possibly improve performance
-         *
-         * Not sure if that keeping the context is working
-         */
         updateInternals(node, previousEl);
         return renderNode(node.type(node.attributes), previousEl);
     }
 
     // If the same type just replace the attributes
+    // That way we can use it's context
     // TODO: Add a key to the node to improve this check
     const isSameElement = previousEl.tagName.toLowerCase() === node.type;
     const el: Element = isSameElement ? previousEl : document.createElement(node.type);
@@ -151,6 +143,7 @@ function applyAttributes(node: Node, el: Element) {
         if (key === 'children') return;
         if (value === undefined) return;
         if (key.startsWith('on') && typeof value === 'function') {
+            // TODO: Currently this isn't cleaning up any previous event listeners
             return el.addEventListener(key.slice(2), value as EventListener);
         }
         el.setAttribute(key, value);
