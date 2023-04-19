@@ -97,24 +97,26 @@ function updateInternals(node: Node, el: Element) {
  * Handle getting the internals
  */
 export function getInternals(): Internals['current'] {
+    // If we are in the browser return the current internals
     if (typeof document !== 'undefined') {
-        // @ts-ignore
         return window._internals.current;
     }
-    const serverState: Record<number, any> = {};
+    // If we are in the server return simplified internals
     const serverInternals: Internals = {
         current: {
+            previousContext: null,
             context: [],
-            previousContext: [],
             register: (state) => {
-                const key = Math.random();
-                serverState[key] = state;
+                const key = serverInternals.current.context.length;
+                serverInternals.current.context.push(state);
                 return key;
             },
             set: () => {
                 throw new Error('Rendering is not supported in the server');
             },
-            get: (key) => serverState[key],
+            get: (key) => {
+                return serverInternals.current.context[key];
+            },
         },
     };
     return serverInternals.current;
@@ -163,7 +165,6 @@ function applyAttributes(node: Node, el: Element) {
  * Hydrates the dom elements with our component
  */
 export default function hydrate(component: ComponentType) {
-    // @ts-ignore
     window._internals = internals;
     const root = document.body.children[0];
     const node = { type: component, attributes: {} };

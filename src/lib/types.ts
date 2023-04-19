@@ -1,6 +1,8 @@
 export interface Internals {
     current: {
+        // deno-lint-ignore no-explicit-any
         previousContext: any[] | null;
+        // deno-lint-ignore no-explicit-any
         context: any[];
         register: <T>(value: T) => number;
         get: <T>(key: number) => T;
@@ -17,7 +19,6 @@ export type NoProps = Record<string, never>;
 
 export type PageType<P = NoProps> = ComponentType<P> & { meta?: PageMeta };
 
-// deno-lint-ignore no-explicit-any
 export type ComponentType<P = NoProps> = <T extends keyof HTMLElementTagNameMap>(props: P) => Node<T>;
 
 export interface ModuleMap {
@@ -25,18 +26,17 @@ export interface ModuleMap {
 }
 
 // Node can also be string? or null maybe?
+// deno-lint-ignore no-explicit-any
 export type Node<T extends keyof HTMLElementTagNameMap = any> = {
     type: T | ComponentType;
     attributes: Omit<HTMLElementTagNameMap[T], 'children' | 'style'> & {
-        // deno-lint-ignore no-explicit-any
-        children?: (Node<any> | string)[] | Node<any> | string;
+        children?: Child[] | Child;
         style?: string;
     };
 };
 
 export type Child =
-    // deno-lint-ignore no-explicit-any
-    | Node<any>
+    | Node
     // deno-lint-ignore ban-types
     | object
     | string
@@ -85,5 +85,9 @@ declare global {
             // deno-lint-ignore no-explicit-any
             props: any;
         }
+    }
+
+    interface Window {
+        _internals: Internals;
     }
 }

@@ -3,7 +3,7 @@ import { traverse } from '@/lib/traverse.ts';
 
 const TEMPLATE = await Deno.readTextFile('./src/index.html');
 
-export function serializeNode(node: Node<keyof HTMLElementTagNameMap>): string {
+export function serializeNode(node: Node): string {
     if (typeof node.type === 'function') {
         return serializeNode(node.type(node.attributes));
     }

@@ -2,9 +2,7 @@ import type { ComponentType, Node } from '@/lib/types.ts';
 
 function jsx<K extends keyof HTMLElementTagNameMap>(
     elementType: K | ComponentType,
-    // TODO: fix this
-    // deno-lint-ignore no-explicit-any
-    attributes: any, // children is Node
+    attributes: Node['attributes'],
 ): Node<K> {
     if (typeof elementType === 'function') {
         return { type: elementType, attributes };
@@ -12,8 +10,7 @@ function jsx<K extends keyof HTMLElementTagNameMap>(
     return { type: elementType, attributes };
 }
 
-// deno-lint-ignore no-explicit-any
-function Fragment(props: any) {
+function Fragment(props: Pick<Node['attributes'], 'children'>) {
     return props.children;
 }
 
