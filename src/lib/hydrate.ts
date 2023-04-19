@@ -53,7 +53,7 @@ export const internals: Internals = {
 /**
  * Map of elements to their internals
  */
-const internalsInUse = new WeakMap<Element, Internals['current']>();
+const internalsInUse = new Map<Element, Internals['current']>();
 
 /**
  * Creates new internals for the current node
@@ -63,42 +63,26 @@ const internalsInUse = new WeakMap<Element, Internals['current']>();
 function updateInternals(node: Node, el: Element) {
     if (internalsInUse.has(el)) {
         const internalsForNode = internalsInUse.get(el)!;
-        console.log(
-            'gi',
-            node,
-            [...internalsForNode.previousContext || []],
-            [...internalsForNode.context],
-            el,
-        );
-        internalsForNode.previousContext = [...internalsForNode.context];
+        // Clear the current context read for rendering
         internalsForNode.context = [];
         internals.current = internalsForNode;
     } else {
-        console.log('gi', node, 'new!', el);
         const internalsForNode: Internals['current'] = {
             previousContext: null,
             context: [],
             register: (initialState) => {
-                console.log('register', [...internalsForNode.previousContext || []], node, el, initialState);
                 const localContext = internalsForNode.context;
                 const key = localContext.length;
                 localContext.push(initialState);
                 return key;
             },
             set: (key, newValue) => {
-                console.log('set', key, newValue, node, el);
                 internalsForNode.context[key] = newValue;
+                // Save the previous context
+                internalsForNode.previousContext = [...internalsForNode.context];
                 renderNode(node, el);
             },
             get: (key) => {
-                console.log(
-                    'get',
-                    key,
-                    [...internalsForNode.previousContext || []],
-                    internalsForNode.context,
-                    node,
-                    el,
-                );
                 if (internalsForNode.previousContext) return internalsForNode.previousContext[key];
                 return internalsForNode.context[key];
             },
@@ -139,7 +123,7 @@ export function getInternals(): Internals['current'] {
 /**
  * Map of elements to their event listeners
  */
-const listenersInUse = new WeakMap<Element, [string, EventListenerOrEventListenerObject][]>();
+const listenersInUse = new Map<Element, [string, EventListenerOrEventListenerObject][]>();
 
 /**
  * Applies attributes of a node to a dom element
