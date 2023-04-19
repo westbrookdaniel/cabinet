@@ -29,7 +29,7 @@ async function ensureEsbuildInitialized() {
     }
 }
 
-const isDev = true;
+const isDev = Deno.env.get('ENV') === 'dev';
 
 export async function bundleFiles(sourcefiles: string[]) {
     await ensureEsbuildInitialized();
