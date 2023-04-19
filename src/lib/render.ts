@@ -54,6 +54,8 @@ async function getPageDataForPath(modules: ModuleMap, path: string) {
     };
 }
 
+const wrapInRoot = (html: string) => `<div id="_root">${html}</div>`;
+
 export async function render(modules: ModuleMap, url: URL): Promise<string> {
     const page = await getPageDataForPath(modules, url.pathname);
 
@@ -62,10 +64,11 @@ export async function render(modules: ModuleMap, url: URL): Promise<string> {
 
     const uglyTemplate = TEMPLATE.replace(/<!--(.*?)-->|\s\B/gm, '');
 
-    return uglyTemplate.replace('{{app}}', clientOnly ? '' : serializeNode(page.component({}))).replace(
-        '{{scripts}}',
-        shouldHydrate
-            ? `<script type="module">import h from './bundle/lib/hydrate.js';import p from './bundle/pages/${page.fileName}.js';h(p);</script>`
-            : '',
-    );
+    return uglyTemplate.replace('{{app}}', wrapInRoot(clientOnly ? '' : serializeNode(page.component({}))))
+        .replace(
+            '{{scripts}}',
+            shouldHydrate
+                ? `<script type="module">import h from './bundle/lib/hydrate.js';import p from './bundle/pages/${page.fileName}.js';h(p);</script>`
+                : '',
+        );
 }

@@ -4,16 +4,16 @@ import { traverse } from '@/lib/traverse.ts';
 /**
  * Creates dom element from a node
  */
-function renderNode(node: Node, previousEl: Element): Element {
+function renderNode(node: Node, previousEl: Element | undefined): Element {
     if (typeof node.type === 'function') {
-        updateInternals(node, previousEl);
+        if (previousEl) updateInternals(node, previousEl);
         return renderNode(node.type(node.attributes), previousEl);
     }
 
     // If the same type just replace the attributes
     // That way we can use it's context
     // TODO: Add a key to the node to improve this check
-    const isSameElement = previousEl.tagName.toLowerCase() === node.type;
+    const isSameElement = previousEl?.tagName.toLowerCase() === node.type;
     const el: Element = isSameElement ? previousEl : document.createElement(node.type);
     applyAttributes(node, el);
 
@@ -22,7 +22,7 @@ function renderNode(node: Node, previousEl: Element): Element {
     if (children) {
         traverse(children, {
             node: (child, i) => {
-                newChildren.push(renderNode(child, previousEl.children[i ?? 0]));
+                newChildren.push(renderNode(child, previousEl?.children[i ?? 0]));
             },
             string: (child) => {
                 newChildren.push(document.createTextNode(child));
@@ -52,6 +52,7 @@ export const internals: Internals = {
 
 /**
  * Map of elements to their internals
+ * TODO: Add some manual cleanup for internals when the element is removed
  */
 const internalsInUse = new WeakMap<Element, Internals['current']>();
 
@@ -60,8 +61,8 @@ const internalsInUse = new WeakMap<Element, Internals['current']>();
  * If there is already an interanal in use for the hydrated
  * node's element it uses that instead
  */
-function updateInternals(node: Node, el: Element) {
-    if (internalsInUse.has(el)) {
+function updateInternals(node: Node, el?: Element | undefined) {
+    if (el && internalsInUse.has(el)) {
         const internalsForNode = internalsInUse.get(el)!;
         // Clear the current context read for rendering
         internalsForNode.context = [];
@@ -80,6 +81,11 @@ function updateInternals(node: Node, el: Element) {
                 internalsForNode.context[key] = newValue;
                 // Save the previous context
                 internalsForNode.previousContext = [...internalsForNode.context];
+                // TODO: How to get this element not at the time of calling updateInternals
+                // So that we can updateInternals -> renderComponent -> create element -> set element for internals
+                // Perhaps more like prepareInternals(node) -> renderComponent -> setElementForInternals(node, el)
+                // We should store the node temporarly in a WeakMap and then remove it after
+                if (!el) throw new Error('Element not found');
                 renderNode(node, el);
             },
             get: (key) => {
@@ -124,6 +130,7 @@ export function getInternals(): Internals['current'] {
 
 /**
  * Map of elements to their event listeners
+ * TODO: Add some manual cleanup for listeners when the element is removed
  */
 const listenersInUse = new WeakMap<Element, [string, EventListenerOrEventListenerObject][]>();
 
@@ -163,10 +170,12 @@ function applyAttributes(node: Node, el: Element) {
 
 /**
  * Hydrates the dom elements with our component
+ * Can sometimes just be a render but let's call it hydrate
  */
 export default function hydrate(component: ComponentType) {
     window._internals = internals;
-    const root = document.body.children[0];
+    const root = document.getElementById('_root');
+    if (!root) throw new Error('Root element not found');
     const node = { type: component, attributes: {} };
     const el = renderNode(node, root);
     root.replaceWith(el);
