@@ -27,12 +27,20 @@ export function ref<T>(initial: T) {
 }
 
 // deno-lint-ignore no-explicit-any
-export function memo<T>(_deps: any[], fn: () => T) {
+type MemoType<T> = { deps: any[]; value: T } | null;
+
+// deno-lint-ignore no-explicit-any
+export function memo<T>(deps: any[], fn: () => T): T {
+    console.log('Starting memo for', deps, fn);
     const internals = getInternals();
-    // TODO: How does memoisation work?
-    // Pretty sure we need to pass it in as internals.register(fn)
-    // and then maybe only call it when inserting into previousContext?
-    // Also need to handle deps array to invalidate by re-setting
-    const key = internals.register(fn());
-    return internals.get<T>(key);
+    const key = internals.register(null);
+    console.log(key);
+    const state = internals.get<MemoType<T>>(key);
+    console.log(state);
+    if (state && state.deps.length > 0 && state.deps.every((dep, i) => dep === deps[i])) {
+        return state.value;
+    }
+    const value = fn();
+    internals.set(key, { deps, value });
+    return value;
 }

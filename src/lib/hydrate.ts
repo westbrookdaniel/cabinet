@@ -144,9 +144,7 @@ export function getInternals(): Internals['current'] {
                 serverInternals.current.context.push(state);
                 return key;
             },
-            set: () => {
-                throw new Error('Rendering is not supported in the server');
-            },
+            set: () => {},
             get: (key) => {
                 return serverInternals.current.context[key];
             },
