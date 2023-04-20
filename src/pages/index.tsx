@@ -18,17 +18,12 @@ const Home: PageType = () => {
 
     const initTodos = todos.value;
 
-    const onToggle = (id: number) => {
+    // TODO: Fix this breaking
+    const onToggle = memo([], () => (id: number) => {
         todos.value = initTodos.map((t) => {
             return t.id === id ? { ...t, done: !t.done } : t;
         });
-    };
-
-    // const onToggle = memo([], () => (id: number) => {
-    //     todos.value = initTodos.map((t) => {
-    //         return t.id === id ? { ...t, done: !t.done } : t;
-    //     });
-    // });
+    });
 
     return (
         <div>
