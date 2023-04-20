@@ -1,6 +1,7 @@
 import { ref } from '@/lib/client.ts';
 
 export default function Counter() {
+    console.log('COUNTER');
     // TODO: Fix multiple registers in the same component
     const count = ref(0);
     const count2 = ref(0);

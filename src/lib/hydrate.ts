@@ -119,9 +119,13 @@ const createInternalsSetter = (
     el: Element | undefined,
 ): Internals['current']['set'] =>
 (key, newValue) => {
-    internalsForNode.context[key] = newValue;
-    // Save the previous context
-    internalsForNode.previousContext = [...internalsForNode.context];
+    // Update the context
+    if (internalsForNode.previousContext) {
+        internalsForNode.previousContext[key] = newValue;
+    } else {
+        internalsForNode.context[key] = newValue;
+        internalsForNode.previousContext = [...internalsForNode.context];
+    }
     if (!el) throw new Error('Element not found');
     renderNode(node, el);
 };
