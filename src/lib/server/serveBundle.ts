@@ -18,6 +18,7 @@ export async function serveBundle(path: string) {
         pathToBundle,
         import.meta.url,
         new URL(pathToBundle.slice(0, pathToBundle.lastIndexOf('/')), import.meta.url).pathname,
+        import.meta.resolve(pathToBundle),
     );
 
     // find the original file extension
