@@ -34,7 +34,7 @@ function renderPage(
 
     // TODO: Change how bundling works so this isn't on the fly and we have less duplication
     const script =
-        `import h from '/bundle/lib/hydrate.js';import p from '/bundle/pages/${fileName}.js';h(p);`;
+        `import h from '/_bundle/lib/hydrate.js';import p from '/_bundle/pages/${fileName}.js';h(p);`;
 
     const html = uglyTemplate.replace('{{app}}', wrapInRoot(serializeNode(component({}))))
         .replace(

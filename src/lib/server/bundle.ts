@@ -1,6 +1,7 @@
 import * as esbuildWasm from 'esbuild/wasm';
 import * as esbuildNative from 'esbuild/native';
 import { denoPlugin } from 'esbuild-deno-loader';
+import { isDev } from '@/lib/server/env.ts';
 
 const esbuild: typeof esbuildWasm = Deno.run === undefined ? esbuildWasm : esbuildNative;
 
@@ -29,37 +30,64 @@ async function ensureEsbuildInitialized() {
     }
 }
 
-const isDev = Deno.env.get('ENV') === 'dev';
+const getBuildOptions = (sourcefiles: string[], distPath: string): esbuildWasm.BuildOptions => ({
+    entryPoints: sourcefiles.map((file) => new URL(file, import.meta.url).href),
+    bundle: true,
+    format: 'esm',
+    jsx: 'automatic',
+    jsxImportSource: '@/lib',
+    treeShaking: true,
+
+    minify: !isDev,
+    minifyWhitespace: !isDev,
+    minifyIdentifiers: !isDev,
+    absWorkingDir: Deno.cwd(),
+    outdir: distPath,
+    // TODO: Add asset hashing
+    // assetNames: 'assets/[name]-[hash]',
+    // chunkNames: 'chunks/[name]-[hash]',
+    pure: ['jsx', 'jsxs'],
+    platform: 'neutral',
+    target: ['chrome99', 'firefox99', 'safari15'],
+    plugins: [denoPlugin({
+        importMapURL: new URL('../../../import_map.json', import.meta.url),
+    })],
+    write: true,
+});
 
 export async function bundleFiles(sourcefiles: string[]) {
+    const distPath = new URL('../../../public/_bundle', import.meta.url).pathname;
+
     await ensureEsbuildInitialized();
 
-    const result = await esbuild.build({
-        entryPoints: sourcefiles.map((file) => new URL(file, import.meta.url).href),
-        bundle: true,
-        format: 'esm',
-        jsx: 'automatic',
-        jsxImportSource: '@/lib',
-        treeShaking: true,
-        minify: !isDev,
-        minifyWhitespace: !isDev,
-        minifyIdentifiers: !isDev,
-        absWorkingDir: Deno.cwd(),
-        outdir: '.',
-        outfile: '',
-        platform: 'neutral',
-        target: ['chrome99', 'firefox99', 'safari15'],
-        plugins: [denoPlugin({
-            importMapURL: new URL('../../../import_map.json', import.meta.url),
-        })],
-        write: false,
-    });
+    // await Deno.remove(distPath, { recursive: true });
 
+    // if (isDev) {
+    //     const ctx = await esbuild.context(getBuildOptions(sourcefiles, distPath));
+    //     await ctx.watch();
+    // } else {
+    const result = await esbuild.build(getBuildOptions(sourcefiles, distPath));
     if (result.warnings.length) {
         console.error(result.warnings);
     }
+    // }
+}
 
-    const outputs = result.outputFiles;
-    if (!outputs) throw new Error(`Failed to transform`);
-    return outputs;
+export async function bundle() {
+    const files: string[] = ['../hydrate.ts'];
+    // Get just PageModules from pages dir
+    for await (const dirEntry of Deno.readDir('./src/pages')) {
+        if (!dirEntry.isFile) break;
+        if (dirEntry.name.includes('.server')) break;
+        files.push(`../../pages/${dirEntry.name}`);
+    }
+    const resolvedFiles = files.map((f) => new URL(f, import.meta.url).pathname);
+    console.log(resolvedFiles);
+    await bundleFiles(resolvedFiles);
+}
+
+if (import.meta.main) {
+    console.log('Bundling...');
+    await bundle();
+    console.log('Done!');
 }

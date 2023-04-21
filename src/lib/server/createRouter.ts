@@ -1,44 +1,39 @@
 import { servePageModule } from '@/lib/server/servePageModule.ts';
 import { serveDir } from 'std/http/file_server.ts';
 import { ModuleMap } from '@/lib/types.ts';
-import { serveBundle } from '@/lib/server/serveBundle.ts';
 import { normalize } from 'std/path/posix.ts';
 import { blue, green, yellow } from 'std/fmt/colors.ts';
 import { Status } from 'std/http/http_status.ts';
 import { serveServerModule } from '@/lib/server/serveServerModule.ts';
+import { isDev } from '@/lib/server/env.ts';
+import { bundle } from '@/lib/server/bundle.ts';
 
 export const createRouter = async (modules: ModuleMap) => {
-    await generateModules();
+    if (isDev) {
+        await generateModules();
+        await bundle();
+    }
 
     return async (req: Request): Promise<Response> => {
         const url = new URL(req.url);
 
-        if (url.pathname.startsWith('/api')) {
+        if (url.pathname.startsWith('/api')) { // If is an API request
             const res = await serveServerModule(modules, req);
             log(req, res, 'api');
             return res;
         }
-        if (req.method !== 'GET') {
+        if (req.method !== 'GET') { // Only allow GET requests past this point
             const res = new Response('Method not allowed', { status: Status.MethodNotAllowed });
             log(req, res);
             return res;
         }
-        if (url.pathname.startsWith('/public')) {
-            const res = await serveDir(req, { fsRoot: './public', urlRoot: 'public', quiet: true });
+        if (url.pathname.includes('.')) { // If has a file extension
+            const res = await serveDir(req, { fsRoot: './public', urlRoot: '', quiet: true });
             log(req, res, 'file');
-            return res;
-        }
-        if (url.pathname === '/favicon.ico') {
-            const res = new Response(null, { status: Status.NotFound });
-            log(req, res, 'file');
-            return res;
-        }
-        if (url.pathname.startsWith('/bundle') && url.pathname.endsWith('.js')) {
-            const res = await serveBundle(url.pathname.replace('/bundle/', ''));
-            log(req, res, 'bundle');
             return res;
         }
 
+        // If is a page request
         const { html, status } = await servePageModule(modules, url);
         const res = new Response(new TextEncoder().encode(html), { status });
         log(req, res, 'page');
@@ -49,8 +44,9 @@ export const createRouter = async (modules: ModuleMap) => {
 async function generateModules() {
     const importStr: string[] = [];
     const exportStr: string[] = [];
+    // Get all modules from pages dir
     for await (const dirEntry of Deno.readDir('./src/pages')) {
-        if (!dirEntry.isFile) return;
+        if (!dirEntry.isFile) break;
         const name = dirEntry.name.replace(/\.[^/.]+$/, '');
         const modName = name.replace('.', '_');
         importStr.push(`import * as _${modName} from './src/pages/${dirEntry.name}';`);
@@ -73,14 +69,6 @@ export const modules = {
     } catch {
         // Ignore error, we'll just write the file
     }
-
-    try {
-        await Deno.writeTextFile('./modules.gen.ts', file);
-    } catch {
-        throw new Error(
-            'Runtime module generation is not supported on this platform. Please commit the generated file.',
-        );
-    }
 }
 
 function log(req: Request, res: Response, type = 'other') {
@@ -93,10 +81,10 @@ function log(req: Request, res: Response, type = 'other') {
         case 'page':
             s = blue(s);
             break;
-        case 'bundle':
+        case 'file':
             s = yellow(s);
             break;
-        case 'file':
+        case 'api':
             s = green(s);
             break;
     }
