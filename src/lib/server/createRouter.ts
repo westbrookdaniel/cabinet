@@ -9,10 +9,8 @@ import { isDev } from '@/lib/server/env.ts';
 import { bundle } from '@/lib/server/bundle.ts';
 
 export const createRouter = async (modules: ModuleMap) => {
-    if (isDev) {
-        await generateModules();
-        await bundle();
-    }
+    if (isDev) await generateModules();
+    const bundledFiles = await bundle();
 
     return async (req: Request): Promise<Response> => {
         const url = new URL(req.url);
@@ -34,7 +32,7 @@ export const createRouter = async (modules: ModuleMap) => {
         }
 
         // If is a page request
-        const { html, status } = await servePageModule(modules, url);
+        const { html, status } = await servePageModule(modules, url, bundledFiles);
         const res = new Response(new TextEncoder().encode(html), { status });
         log(req, res, 'page');
         return res;

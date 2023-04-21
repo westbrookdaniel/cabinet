@@ -1,6 +1,7 @@
 import * as esbuildWasm from 'esbuild/wasm';
 import * as esbuildNative from 'esbuild/native';
 import { denoPlugin } from 'esbuild-deno-loader';
+import { isDev } from './env.ts';
 
 const esbuild: typeof esbuildWasm = Deno.run === undefined ? esbuildWasm : esbuildNative;
 
@@ -57,32 +58,44 @@ const getBuildOptions = (sourcefiles: string[], distPath: string): esbuildWasm.B
 
 export async function bundleFiles(sourcefiles: string[]) {
     const outPath = new URL('../../../public/_bundle', import.meta.url).pathname;
-
     await ensureEsbuildInitialized();
-
-    await esbuild.build(getBuildOptions(sourcefiles, outPath));
+    const res = await esbuild.build(getBuildOptions(sourcefiles, outPath));
+    return res.outputFiles?.map((o) => o.path) || [];
 }
 
 export async function bundle() {
-    const files: string[] = ['../hydrate.ts'];
-    // Get just PageModules from pages dir
-    for await (const dirEntry of Deno.readDir('./src/pages')) {
-        if (!dirEntry.isFile) break;
-        if (dirEntry.name.includes('.server')) break;
-        files.push(`../../pages/${dirEntry.name}`);
+    if (isDev || import.meta.main) {
+        const files: string[] = ['../hydrate.ts'];
+        // Get just PageModules from pages dir
+        for await (const dirEntry of Deno.readDir('./src/pages')) {
+            if (!dirEntry.isFile) break;
+            if (dirEntry.name.includes('.server')) break;
+            files.push(`../../pages/${dirEntry.name}`);
+        }
+        const resolvedFiles = files.map((f) => new URL(f, import.meta.url).pathname);
+        await bundleFiles(resolvedFiles);
     }
-    const resolvedFiles = files.map((f) => new URL(f, import.meta.url).pathname);
 
-    if (import.meta.main) {
-        console.log(resolvedFiles.map((f) => f.replace(Deno.cwd(), '')).join('\n'));
-    }
+    const files: string[] = [];
+    const getFilesInDir = async (dir: string, prefix = '') => {
+        for await (const dirEntry of Deno.readDir(dir)) {
+            if (dirEntry.isDirectory) {
+                await getFilesInDir(`${dir}/${dirEntry.name}`, `${prefix}/${dirEntry.name}`);
+            } else {
+                files.push(`${prefix}/${dirEntry.name}`);
+            }
+        }
+    };
+    await getFilesInDir(new URL('../../../public/_bundle', import.meta.url).pathname);
 
-    await bundleFiles(resolvedFiles);
+    return files;
 }
 
 if (import.meta.main) {
-    console.log('Bundling:');
-    await bundle();
+    console.log('Bundling...');
+    const files = await bundle();
+    console.log('Output:');
+    console.log(files.map((f) => f.replace(Deno.cwd(), '')).join('\n'));
     console.log('Done!');
     Deno.exit(0);
 }

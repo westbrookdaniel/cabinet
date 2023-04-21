@@ -5,7 +5,7 @@ import { isFileForServerModule, isPageModule } from '@/lib/server/modules.ts';
 
 const TEMPLATE = await Deno.readTextFile('./src/index.html');
 
-export async function servePageModule(modules: ModuleMap<ModuleType>, url: URL) {
+export async function servePageModule(modules: ModuleMap<ModuleType>, url: URL, bundledFiles: string[]) {
     const path = url.pathname;
     const fileName = path === '/' ? 'index' : path.slice(1);
 
@@ -15,7 +15,12 @@ export async function servePageModule(modules: ModuleMap<ModuleType>, url: URL) 
     } catch {
         const notFound = modules._404;
         if (!isPageModule(notFound)) throw new Error('Failed to load 404 page');
-        return renderPage({ component: notFound.default, fileName: '404', status: Status.NotFound });
+        return renderPage({
+            component: notFound.default,
+            fileName: '404',
+            status: Status.NotFound,
+            bundledFiles,
+        });
     }
 
     const mod = modules[`_${fileName}`];
@@ -24,11 +29,26 @@ export async function servePageModule(modules: ModuleMap<ModuleType>, url: URL) 
         throw new Error(`Couldnt find vaild component for ${path}`);
     }
 
-    return renderPage({ component: mod.default, fileName, status: Status.OK });
+    return renderPage({
+        component: mod.default,
+        fileName,
+        status: Status.OK,
+        bundledFiles,
+    });
 }
 
 function renderPage(
-    { component, fileName, status }: { component: PageType; fileName: string; status: Status },
+    {
+        component,
+        fileName,
+        status,
+        bundledFiles,
+    }: {
+        component: PageType;
+        fileName: string;
+        status: Status;
+        bundledFiles: string[];
+    },
 ) {
     const uglyTemplate = TEMPLATE.replace(/<!--(.*?)-->|\s\B/gm, '');
 
@@ -39,7 +59,12 @@ function renderPage(
     const html = uglyTemplate.replace('{{app}}', wrapInRoot(serializeNode(component({}))))
         .replace(
             '{{scripts}}',
-            `<script id='_page' type="module">${script}</script>`,
+            `<script id='_page' type="module">${script}</script>${
+                bundledFiles.filter((f) => f.endsWith('.map')).map((file) =>
+                    `<link rel="preload" as="script" src="/_bundle${file}"></link>`
+                )
+                    .join('')
+            }`,
         );
 
     return { html, status };
