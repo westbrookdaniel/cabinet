@@ -1,17 +1,30 @@
-import { ref } from '@/lib/client.ts';
+import { getId } from '@/lib/utils.ts';
+
+function render(id: string, contents: string) {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = contents;
+}
 
 export default function Counter() {
-    const count1 = ref(0);
-    const count2 = ref(0);
+    const id = getId();
+
+    const count = {
+        _value: 0,
+        get value() {
+            return this._value;
+        },
+        set value(value) {
+            this._value = value;
+            // re-render
+            render(id, `Count: ${this._value}`);
+        },
+    };
 
     return (
         <div>
-            <button onclick={() => count1.value--}>-</button>
-            <span style='margin-left: 8px; margin-right: 8px;'>Count1: {count1.value}</span>
-            <button style='margin-right: 16px;' onclick={() => count1.value++}>+</button>
-            <button onclick={() => count2.value--}>-</button>
-            <span style='margin-left: 8px; margin-right: 8px;'>Count2: {count2.value}</span>
-            <button onclick={() => count2.value++}>+</button>
+            <button onclick={() => count.value--}>-</button>
+            <span id={id} style='margin-left: 8px; margin-right: 8px;'>Count: {count.value}</span>
+            <button style='margin-right: 16px;' onclick={() => count.value++}>+</button>
         </div>
     );
 }

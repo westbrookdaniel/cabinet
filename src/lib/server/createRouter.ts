@@ -1,4 +1,4 @@
-import { renderUrl } from '@/lib/server/renderUrl.ts';
+import { renderForServer } from '@/lib/server/renderForServer.ts';
 import { serveDir } from 'std/http/file_server.ts';
 import { ModuleMap } from '@/lib/types.ts';
 import { serveBundle } from '@/lib/server/serveBundle.ts';
@@ -25,7 +25,7 @@ export const createRouter = async (modules: ModuleMap) => {
             return new Response(null, { status: 404 });
         }
 
-        const html = await renderUrl(modules, url);
+        const html = await renderForServer(modules, url);
         return new Response(new TextEncoder().encode(html));
     };
 };

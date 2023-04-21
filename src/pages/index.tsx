@@ -1,5 +1,4 @@
 import TodoItem from '@/components/TodoItem.tsx';
-import { memo, ref } from '@/lib/client.ts';
 import Counter from '@/components/Counter.tsx';
 import type { PageType } from '@/lib/types.ts';
 
@@ -10,30 +9,33 @@ export type Todo = {
 };
 
 const Home: PageType = () => {
-    const todos = ref([
+    const todos = [
         { id: 1, text: 'Handle bundling', done: true },
         { id: 2, text: 'Make reactive', done: false },
         { id: 3, text: 'Improve performance', done: false },
-    ]);
+    ];
 
-    const initTodos = todos.value;
+    const onToggle = (id: number) => {
+        const found = todos.find((t) => t.id === id);
+        if (found) found.done = !found.done;
+        replaceJson(todos);
+    };
 
-    const onToggle = memo([], () => (id: number) => {
-        todos.value = initTodos.map((t) => {
-            return t.id === id ? { ...t, done: !t.done } : t;
-        });
-    });
+    const replaceJson = (todos: Todo[]) => {
+        const json = document.getElementById('json');
+        if (json) json.innerHTML = JSON.stringify(todos, undefined, 2);
+    };
 
     return (
         <div>
-            {todos.value.map((todo) => (
+            {todos.map((todo) => (
                 <TodoItem
                     todo={todo}
                     onToggle={() => onToggle(todo.id)}
                 />
             ))}
-            <pre style='margin-top: 10px;'>
-                {JSON.stringify(todos.value, undefined, 2)}
+            <pre id='json' style='margin-top: 10px;'>
+                {JSON.stringify(todos, undefined, 2)}
             </pre>
             <div style='margin-top: 10px;'>
                 <Counter />
@@ -44,5 +46,7 @@ const Home: PageType = () => {
         </div>
     );
 };
+
+Home.meta = { noSsr: true };
 
 export default Home;

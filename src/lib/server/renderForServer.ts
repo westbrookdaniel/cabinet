@@ -56,7 +56,7 @@ async function getPageDataForPath(modules: ModuleMap, path: string) {
 
 const wrapInRoot = (html: string) => `<div id="_root">${html}</div>`;
 
-export async function renderUrl(modules: ModuleMap, url: URL): Promise<string> {
+export async function renderForServer(modules: ModuleMap, url: URL): Promise<string> {
     const page = await getPageDataForPath(modules, url.pathname);
 
     const shouldHydrate = page.meta?.hydrate !== false;
@@ -68,7 +68,7 @@ export async function renderUrl(modules: ModuleMap, url: URL): Promise<string> {
         .replace(
             '{{scripts}}',
             shouldHydrate
-                ? `<script type="module">import h from './bundle/lib/hydrate.js';import p from './bundle/pages/${page.fileName}.js';h(p);</script>`
+                ? `<script type="module">import h from './bundle/lib/render.js';import p from './bundle/pages/${page.fileName}.js';h(p);</script>`
                 : '',
         );
 }
