@@ -32,13 +32,12 @@ async function ensureEsbuildInitialized() {
 
 const getBuildOptions = (sourcefiles: string[], distPath: string): esbuildWasm.BuildOptions => ({
     entryPoints: sourcefiles.map((file) => new URL(file, import.meta.url).href),
-    bundle: true,
     format: 'esm',
     jsx: 'automatic',
     jsxImportSource: '@/lib',
     treeShaking: true,
-
     minify: !isDev,
+    bundle: true,
     minifyWhitespace: !isDev,
     minifyIdentifiers: !isDev,
     absWorkingDir: Deno.cwd(),
@@ -62,14 +61,12 @@ export async function bundleFiles(sourcefiles: string[]) {
 
     // await Deno.remove(distPath, { recursive: true });
 
+    // TODO: Add this instead of server restart
     // if (isDev) {
     //     const ctx = await esbuild.context(getBuildOptions(sourcefiles, distPath));
     //     await ctx.watch();
     // } else {
-    const result = await esbuild.build(getBuildOptions(sourcefiles, distPath));
-    if (result.warnings.length) {
-        console.error(result.warnings);
-    }
+    await esbuild.build(getBuildOptions(sourcefiles, distPath));
     // }
 }
 
@@ -82,12 +79,15 @@ export async function bundle() {
         files.push(`../../pages/${dirEntry.name}`);
     }
     const resolvedFiles = files.map((f) => new URL(f, import.meta.url).pathname);
-    console.log(resolvedFiles);
+
+    console.log(resolvedFiles.map((f) => f.replace(Deno.cwd(), '')).join('\n'));
+
     await bundleFiles(resolvedFiles);
 }
 
 if (import.meta.main) {
-    console.log('Bundling...');
+    console.log('Bundling:');
     await bundle();
     console.log('Done!');
+    Deno.exit(0);
 }

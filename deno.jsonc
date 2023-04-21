@@ -2,6 +2,7 @@
   "importMap": "./import_map.json",
   "tasks": {
     "dev": "ENV=dev deno run --watch=src/ -A src/main.ts",
+    "build": "deno run -A src/lib/server/bundle.ts",
     "start": "deno run -A src/main.ts"
   },
   "compilerOptions": {
