@@ -1,6 +1,7 @@
 import type { PageType } from '@/lib/types.ts';
 import { getId, withFormData } from '@/lib/utils.ts';
 import { renderNode } from '@/lib/render.ts';
+import Navigation from '../components/Navigation.tsx';
 
 type Todo = {
     id: string;
@@ -33,6 +34,7 @@ const Todos: PageType = () => {
     return (
         <div>
             <h1>Todos</h1>
+            <Navigation />
             <AddTodo onAdd={onAdd} />
             <div id='todos'>
                 {todosNode}

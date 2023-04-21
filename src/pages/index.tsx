@@ -1,6 +1,7 @@
 import TodoItem from '@/components/TodoItem.tsx';
 import Counter from '@/components/Counter.tsx';
 import type { PageType } from '@/lib/types.ts';
+import Navigation from '../components/Navigation.tsx';
 
 export type Todo = {
     id: number;
@@ -28,6 +29,8 @@ const Home: PageType = () => {
 
     return (
         <div>
+            <h1>Home</h1>
+            <Navigation />
             {todos.map((todo) => (
                 <TodoItem
                     todo={todo}

@@ -79,12 +79,10 @@ function applyAttributes(node: Node, el: HTMLElement) {
 
 /**
  * Hydrates the dom elements with our component
- * Can sometimes just be a render but let's call it hydrate
+ * Pretty much just a render but lets call it hydrate
  */
 export default function hydrate(component: ComponentType) {
     const root = document.getElementById('_root');
     if (!root) throw new Error('Root element not found');
-    const node = { type: component, attributes: {} };
-    const el = renderNode(root, node);
-    root.replaceWith(el);
+    renderNode(root, { type: component, attributes: {} });
 }
