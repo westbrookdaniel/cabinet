@@ -81,13 +81,13 @@ function log(req: Request, res: Response, type = 'other') {
 
     switch (type) {
         case 'page':
-            s = green(s);
+            s = blue(s);
             break;
         case 'bundle':
             s = yellow(s);
             break;
         case 'file':
-            s = blue(s);
+            s = green(s);
             break;
     }
 
