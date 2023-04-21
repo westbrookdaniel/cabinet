@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../src/lib/jsx-runtime.ts"],
+  "sourcesContent": ["import type { ComponentType, Node } from '@/lib/types.ts';\n\nfunction jsx<K extends keyof HTMLElementTagNameMap>(\n    elementType: K | ComponentType,\n    attributes: Node['attributes'],\n): Node<K> {\n    if (typeof elementType === 'function') {\n        return { type: elementType, attributes };\n    }\n    return { type: elementType, attributes };\n}\n\nfunction Fragment(props: Pick<Node['attributes'], 'children'>) {\n    return props.children;\n}\n\nexport { Fragment, jsx, jsx as jsxs };\n"],
+  "mappings": "AAEA,SAASA,EACLC,EACAC,EACO,CACP,OAAI,OAAOD,GAAgB,WAChB,CAAE,KAAMA,EAAa,WAAAC,CAAW,EAEpC,CAAE,KAAMD,EAAa,WAAAC,CAAW,CAC3C",
+  "names": ["jsx", "elementType", "attributes"]
+}

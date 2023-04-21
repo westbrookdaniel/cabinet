@@ -1,7 +1,6 @@
 import * as esbuildWasm from 'esbuild/wasm';
 import * as esbuildNative from 'esbuild/native';
 import { denoPlugin } from 'esbuild-deno-loader';
-import { isDev } from '@/lib/server/env.ts';
 
 const esbuild: typeof esbuildWasm = Deno.run === undefined ? esbuildWasm : esbuildNative;
 
@@ -36,10 +35,12 @@ const getBuildOptions = (sourcefiles: string[], distPath: string): esbuildWasm.B
     jsx: 'automatic',
     jsxImportSource: '@/lib',
     treeShaking: true,
-    minify: !isDev,
+    minify: true,
     bundle: true,
-    minifyWhitespace: !isDev,
-    minifyIdentifiers: !isDev,
+    splitting: true,
+    sourcemap: true,
+    minifyWhitespace: true,
+    minifyIdentifiers: true,
     absWorkingDir: Deno.cwd(),
     outdir: distPath,
     // TODO: Add asset hashing
@@ -55,19 +56,11 @@ const getBuildOptions = (sourcefiles: string[], distPath: string): esbuildWasm.B
 });
 
 export async function bundleFiles(sourcefiles: string[]) {
-    const distPath = new URL('../../../public/_bundle', import.meta.url).pathname;
+    const outPath = new URL('../../../public/_bundle', import.meta.url).pathname;
 
     await ensureEsbuildInitialized();
 
-    // await Deno.remove(distPath, { recursive: true });
-
-    // TODO: Add this instead of server restart
-    // if (isDev) {
-    //     const ctx = await esbuild.context(getBuildOptions(sourcefiles, distPath));
-    //     await ctx.watch();
-    // } else {
-    await esbuild.build(getBuildOptions(sourcefiles, distPath));
-    // }
+    await esbuild.build(getBuildOptions(sourcefiles, outPath));
 }
 
 export async function bundle() {
