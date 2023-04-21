@@ -1,16 +1,16 @@
-import type { ModuleMap, ModuleType, Node, PageType } from '@/lib/types.ts';
+import type { ModuleMap, ModuleType, Node, PageModule } from '@/lib/types.ts';
 import { traverse } from '@/lib/traverse.ts';
 import { Status } from 'std/http/http_status.ts';
 import { isFileForServerModule, isPageModule } from '@/lib/server/modules.ts';
-import { createBrowserHistory, RouterHistory } from '@/lib/history.ts';
+import { RouterHistory } from '@/lib/history.ts';
 
-const TEMPLATE = await Deno.readTextFile('./src/index.html');
+const TEMPLATE = (await Deno.readTextFile('./src/index.html')).replace(/<!--(.*?)-->|\s\B/gm, '');
 
 export async function servePageModule(modules: ModuleMap<ModuleType>, url: URL, bundledFiles: string[]) {
     const path = url.pathname;
     const fileName = path === '/' ? 'index' : path.slice(1);
 
-    console.log(url.href);
+    // This allows you to always have access to the current url, even during ssr
     window.router = {
         href: url.href,
         pathname: url.pathname,
@@ -27,7 +27,7 @@ export async function servePageModule(modules: ModuleMap<ModuleType>, url: URL, 
         const notFound = modules._404;
         if (!isPageModule(notFound)) throw new Error('Failed to load 404 page');
         return renderPage({
-            component: notFound.default,
+            mod: notFound,
             fileName: '404',
             status: Status.NotFound,
             bundledFiles,
@@ -41,7 +41,7 @@ export async function servePageModule(modules: ModuleMap<ModuleType>, url: URL, 
     }
 
     return renderPage({
-        component: mod.default,
+        mod,
         fileName,
         status: Status.OK,
         bundledFiles,
@@ -50,24 +50,26 @@ export async function servePageModule(modules: ModuleMap<ModuleType>, url: URL, 
 
 function renderPage(
     {
-        component,
+        mod,
         fileName,
         status,
         bundledFiles,
     }: {
-        component: PageType;
+        mod: PageModule;
         fileName: string;
         status: Status;
         bundledFiles: string[];
     },
 ) {
-    const uglyTemplate = TEMPLATE.replace(/<!--(.*?)-->|\s\B/gm, '');
+    const component = mod.default;
 
-    // TODO: Change how bundling works so this isn't on the fly and we have less duplication
+    // TODO: Add title and meta tags
+
+    // TODO: Now that bundling is fixed can we improve this?
     const script =
         `import h from '/_bundle/lib/hydrate.js';import p from '/_bundle/pages/${fileName}.js';h(p);`;
 
-    const html = uglyTemplate.replace('{{app}}', wrapInRoot(serializeNode(component({}))))
+    const html = TEMPLATE.replace('{{app}}', wrapInRoot(serializeNode(component({}))))
         .replace(
             '{{scripts}}',
             `<script id='_page' type="module">${script}</script>${
