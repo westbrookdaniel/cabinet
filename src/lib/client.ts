@@ -1,12 +1,17 @@
 import { getInternals } from '@/lib/hydrate.ts';
 
+export type Ref<T> = {
+    value: T;
+    subscribe(listener: (value: T) => void): () => void;
+};
+
 export function ref<T>(initial: T) {
     const internals = getInternals();
     const key = internals.register(initial);
 
     const listeners: ((value: T) => void)[] = [];
 
-    const v = {
+    const v: Ref<T> = {
         get value() {
             return internals.get<T>(key);
         },
@@ -28,7 +33,7 @@ export function ref<T>(initial: T) {
 }
 
 // deno-lint-ignore no-explicit-any
-type MemoType<T> = { deps: any[]; value: T } | null;
+export type MemoType<T> = { deps: any[]; value: T } | null;
 
 // deno-lint-ignore no-explicit-any
 export function memo<T>(deps: any[], fn: () => T): T {
