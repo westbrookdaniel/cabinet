@@ -85,13 +85,21 @@ export default function hydrate(component: ComponentType) {
     const root = document.getElementById('_root');
     if (!root) throw new Error('Root element not found');
     renderNode(root, { type: component, attributes: {} });
-    createClientRouter(root);
+    // TODO: Make this work better
+    // createClientRouter(root);
 }
 
 /**
  * Setup client side routing
  */
 function createClientRouter(root: HTMLElement) {
+    // Handle history api events
+    // TODO: This is hard
+    const onPopState = (e: PopStateEvent) => {
+        console.log(e);
+    };
+    addEventListener('popstate', onPopState);
+
     // Hijack all links
     root.querySelectorAll('a').forEach((el) => hijackLink(el));
 
