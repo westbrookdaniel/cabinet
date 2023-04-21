@@ -11,10 +11,17 @@ export type ServerModule = {
     post?: (req: Request) => Promise<Response> | Response;
 };
 
-export interface ModuleMap {
+export type PageModule = {
+    default: PageType;
+};
+
+export type ModuleType = PageModule | ServerModule;
+
+// deno-lint-ignore no-explicit-any
+export interface ModuleMap<T = any> {
     // Because we * import all modules, we can't use the type of the module
-    // deno-lint-ignore no-explicit-any
-    [key: string]: any; // PageType | ServerModule;
+    // So we use a generic to allow us to hack in a type later on
+    [key: string]: T;
 }
 
 // Node can also be string? or null maybe?

@@ -1,4 +1,4 @@
-import type { ModuleMap, Node } from '@/lib/types.ts';
+import type { ModuleMap, ModuleType, Node, PageModule, PageType } from '@/lib/types.ts';
 import { traverse } from '@/lib/traverse.ts';
 import { Status } from 'std/http/http_status.ts';
 
@@ -29,34 +29,35 @@ export function serializeNode(node: Node): string {
     return `<${node.type}${attributeStr}>${childrenStr}</${node.type}>`;
 }
 
-async function getPageDataForPath(modules: ModuleMap, path: string) {
+export async function renderForServer(modules: ModuleMap<ModuleType>, url: URL) {
+    const path = url.pathname;
     const fileName = path === '/' ? 'index' : path.slice(1);
 
     try {
         if (fileName.includes('.server')) throw new Error('Server only');
         await Deno.stat(`./src/pages/${fileName}.tsx`);
     } catch {
-        const script = `import h from './bundle/lib/hydrate.js';import p from './bundle/pages/404.js';h(p);`;
-        return { component: modules._404.default, script, status: Status.NotFound };
+        const notFound = modules._404;
+        if (!isPageModule(notFound)) throw new Error('Failed to load 404 page');
+        return renderPage({ component: notFound.default, fileName: '404', status: Status.NotFound });
     }
 
-    const component = modules[`_${fileName}`]?.default;
+    const mod = modules[`_${fileName}`];
 
-    if (typeof component !== 'function') {
+    if (!isPageModule(mod)) {
         throw new Error(`Couldnt find vaild component for ${path}`);
     }
 
-    const script =
-        `import h from './bundle/lib/hydrate.js';import p from './bundle/pages/${fileName}.js';h(p);`;
-    return { component, script, status: Status.OK };
+    return renderPage({ component: mod.default, fileName, status: Status.OK });
 }
 
-const wrapInRoot = (html: string) => `<div id="_root">${html}</div>`;
-
-export async function renderForServer(modules: ModuleMap, url: URL) {
-    const { component, script, status } = await getPageDataForPath(modules, url.pathname);
-
+function renderPage(
+    { component, fileName, status }: { component: PageType; fileName: string; status: Status },
+) {
     const uglyTemplate = TEMPLATE.replace(/<!--(.*?)-->|\s\B/gm, '');
+
+    const script =
+        `import h from './bundle/lib/hydrate.js';import p from './bundle/pages/${fileName}.js';h(p);`;
 
     const html = uglyTemplate.replace('{{app}}', wrapInRoot(serializeNode(component({}))))
         .replace(
@@ -66,3 +67,13 @@ export async function renderForServer(modules: ModuleMap, url: URL) {
 
     return { html, status };
 }
+
+function isPageModule(module: ModuleType): module is PageModule {
+    return 'default' in module && typeof module.default === 'function';
+}
+
+// function isServerModule(module: ModuleType): module is PageModule {
+//     return 'get' in module || 'post' in module;
+// }
+
+const wrapInRoot = (html: string) => `<div id="_root">${html}</div>`;
