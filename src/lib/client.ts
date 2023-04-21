@@ -12,6 +12,7 @@ export function ref<T>(initial: T) {
         },
         set value(newValue) {
             internals.set(key, newValue);
+            internals.render();
             listeners.forEach((listener) => listener(newValue));
         },
         subscribe(listener: (value: T) => void) {
@@ -31,14 +32,10 @@ type MemoType<T> = { deps: any[]; value: T } | null;
 
 // deno-lint-ignore no-explicit-any
 export function memo<T>(deps: any[], fn: () => T): T {
-    console.log('Starting memo for', deps, fn);
     const internals = getInternals();
-    console.log('pre-reg internals', [...internals.previousContext || []], [...internals.context]);
     const key = internals.register(null);
-    console.log('key', key);
     const state = internals.get<MemoType<T>>(key);
-    console.log(state);
-    if (state && state.deps.length > 0 && state.deps.every((dep, i) => dep === deps[i])) {
+    if (state && (state.deps.length === 0 || state.deps.every((dep, i) => dep === deps[i]))) {
         return state.value;
     }
     const value = fn();

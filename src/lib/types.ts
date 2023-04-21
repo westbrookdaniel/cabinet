@@ -5,6 +5,7 @@ export interface Internals {
         // deno-lint-ignore no-explicit-any
         context: any[];
         register: <T>(value: T) => number;
+        render: () => void;
         get: <T>(key: number) => T;
         set: <T>(key: number, newValue: T) => void;
     };

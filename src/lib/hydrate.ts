@@ -47,6 +47,9 @@ export const internals: Internals = {
     current: {
         context: [],
         previousContext: [],
+        render: () => {
+            throw new Error('Render function not set');
+        },
         register: () => {
             throw new Error('Register function not set');
         },
@@ -90,7 +93,14 @@ function updateInternals(node: Node, el?: Element | undefined): ((el: Element) =
                 localContext.push(initialState);
                 return key;
             },
-            set: (k, v) => createInternalsSetter(internalsForNode, node, el)(k, v),
+            render: () => createInternalsRender(internalsForNode, node, el)(),
+            set: (key, newValue) => {
+                if (internalsForNode.previousContext) {
+                    internalsForNode.previousContext[key] = newValue;
+                } else {
+                    internalsForNode.context[key] = newValue;
+                }
+            },
             get: (key) => {
                 if (internalsForNode.previousContext) return internalsForNode.previousContext[key];
                 return internalsForNode.context[key];
@@ -104,7 +114,7 @@ function updateInternals(node: Node, el?: Element | undefined): ((el: Element) =
         // Return a callback to set the element for the internals
         return (el) => {
             // Also update the setter to use the new element
-            internalsForNode.set = createInternalsSetter(internalsForNode, node, el);
+            internalsForNode.render = createInternalsRender(internalsForNode, node, el);
             internalsInUse.set(el, internalsForNode);
         };
     }
@@ -113,17 +123,13 @@ function updateInternals(node: Node, el?: Element | undefined): ((el: Element) =
 /**
  * This is needed in a couple of places so it's extracted out
  */
-const createInternalsSetter = (
+const createInternalsRender = (
     internalsForNode: Internals['current'],
     node: Node,
     el: Element | undefined,
-): Internals['current']['set'] =>
-(key, newValue) => {
-    // Update the context
-    if (internalsForNode.previousContext) {
-        internalsForNode.previousContext[key] = newValue;
-    } else {
-        internalsForNode.context[key] = newValue;
+): Internals['current']['render'] =>
+() => {
+    if (!internalsForNode.previousContext) {
         internalsForNode.previousContext = [...internalsForNode.context];
     }
     if (!el) throw new Error('Element not found');
@@ -148,7 +154,12 @@ export function getInternals(): Internals['current'] {
                 serverInternals.current.context.push(state);
                 return key;
             },
-            set: () => {},
+            render: () => {
+                throw new Error('Calling render is not supported in server');
+            },
+            set: (key, newValue) => {
+                serverInternals.current.context[key] = newValue;
+            },
             get: (key) => {
                 return serverInternals.current.context[key];
             },
