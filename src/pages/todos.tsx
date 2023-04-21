@@ -1,5 +1,5 @@
 import type { PageType } from '@/lib/types.ts';
-import { getId } from '@/lib/utils.ts';
+import { getId, withFormData } from '@/lib/utils.ts';
 import { renderNode } from '@/lib/render.ts';
 
 type Todo = {
@@ -41,24 +41,25 @@ const Todos: PageType = () => {
     );
 };
 
+type AddForm = {
+    newtodo: string;
+};
+
 function AddTodo({ onAdd }: { onAdd: (value: string) => void }) {
     const id = getId();
 
     return (
         <form
             id={id}
-            onsubmit={(e: SubmitEvent) => {
-                e.preventDefault();
-                const el = e.target as HTMLFormElement;
-                const text = new FormData(el).get('new-todo') as string;
+            onsubmit={withFormData<AddForm>(({ newtodo: text }, el) => {
                 onAdd(text);
                 el.reset();
-            }}
+            })}
         >
             <label style='display: flex; flex-direction: column; font-size: 12px; gap: 4px;'>
                 New Todo
                 <div>
-                    <input name='new-todo' style='margin-right: 4px;' />
+                    <input name='newtodo' style='margin-right: 4px;' />
                     <button type='submit'>
                         Add
                     </button>
