@@ -1,6 +1,7 @@
 const routes = {
     '/': 'Home',
     '/todos': 'Todos',
+    '/net': 'Network',
 };
 
 const activeStyles = 'font-weight: bold; text-decoration: underline;';
