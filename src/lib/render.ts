@@ -1,4 +1,4 @@
-import type { ComponentType, Internals, Node } from '@/lib/types.ts';
+import type { ComponentType, Node } from '@/lib/types.ts';
 import { traverse } from '@/lib/traverse.ts';
 
 /**
@@ -35,25 +35,6 @@ export function renderNode(
 
     return el;
 }
-
-export const internals: Internals = {
-    current: {
-        context: [],
-        previousContext: [],
-        render: () => {
-            throw new Error('Render function not set');
-        },
-        register: () => {
-            throw new Error('Register function not set');
-        },
-        set: () => {
-            throw new Error('Set function not set');
-        },
-        get: () => {
-            throw new Error('Get function not set');
-        },
-    },
-};
 
 /**
  * Map of elements to their event listeners
@@ -101,7 +82,6 @@ function applyAttributes(node: Node, el: HTMLElement) {
  * Can sometimes just be a render but let's call it hydrate
  */
 export default function hydrate(component: ComponentType) {
-    window._internals = internals;
     const root = document.getElementById('_root');
     if (!root) throw new Error('Root element not found');
     const node = { type: component, attributes: {} };

@@ -1,16 +1,3 @@
-export interface Internals {
-    current: {
-        // deno-lint-ignore no-explicit-any
-        previousContext: any[] | null;
-        // deno-lint-ignore no-explicit-any
-        context: any[];
-        register: <T>(value: T) => number;
-        render: () => void;
-        get: <T>(key: number) => T;
-        set: <T>(key: number, newValue: T) => void;
-    };
-}
-
 export interface PageMeta {
     hydrate?: boolean;
     noSsr?: boolean;
@@ -86,9 +73,5 @@ declare global {
             // deno-lint-ignore no-explicit-any
             props: any;
         }
-    }
-
-    interface Window {
-        _internals: Internals;
     }
 }
