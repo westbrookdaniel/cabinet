@@ -106,16 +106,6 @@ function createClientRouter(root: HTMLElement) {
                         }
                     });
                     break;
-                case 'attributes': {
-                    const el = mutation.target;
-                    if (el instanceof HTMLAnchorElement) {
-                        const attr = mutation.attributeName!;
-                        const value = el.getAttribute(attr);
-                        if (attr === 'href' && value?.startsWith(self.origin)) {
-                            hijackLink(el);
-                        }
-                    }
-                }
             }
         });
     });
@@ -123,52 +113,18 @@ function createClientRouter(root: HTMLElement) {
     observer.observe(root, {
         childList: true,
         subtree: true,
-        attributes: true,
     });
 }
 
-/**
- * Map of elements to their event listeners
- * TODO: Add some manual cleanup for listeners when the element is removed?
- */
-const existingRouterListeners = new WeakMap<HTMLElement, [string, EventListenerOrEventListenerObject]>();
-
 const hijackLink = (el: HTMLAnchorElement) => {
-    // Remove old listener
-    // We remove it here in case the target changes, or it changes to an external link
-    if (existingRouterListeners.has(el)) {
-        const [eventType, listener] = existingRouterListeners.get(el)!;
-        el.removeEventListener(eventType, listener);
-        // Remove from map
-        existingRouterListeners.delete(el);
-    }
-
     // If same origin and internal
-    if (!el.target && el.href?.startsWith(self.origin)) {
-        el.addEventListener('click', (e) => {
-            e.preventDefault();
-            const href = el.getAttribute('href')!;
+    el.addEventListener('click', (e) => {
+        e.preventDefault();
+        const href = el.getAttribute('href')!;
+        if (!el.target && href?.startsWith('/')) {
             navigate(href);
-
-            // TODO: Rework how this all works
-            // Get path to bundle
-            let path = href.replace(self.origin + '/', '');
-            if (path === '/') path = '/index';
-            const bundlePath = `./bundle/pages${path}.js`;
-            // remove current script tag and replace with new one
-            const existingScript = document.getElementById('_page');
-            if (!existingScript) throw new Error('Page script not found');
-            const script = document.createElement('script');
-            script.id = '_page';
-            script.type = 'module';
-            script.appendChild(
-                document.createTextNode(
-                    `import h from './bundle/lib/render.js';import p from '${bundlePath}';h(p);`,
-                ),
-            );
-            existingScript.replaceWith(script);
-        });
-    }
+        }
+    });
 };
 
 // deno-lint-ignore no-explicit-any
@@ -176,4 +132,22 @@ const navigate = (url: string, state?: any) => {
     if (location.pathname === url) return;
     history.scrollRestoration = 'auto';
     history.pushState(state, '', url);
+
+    // TODO: Rework how this all works
+    // Get path to bundle
+    let path = url;
+    if (path === '/') path = '/index';
+    const bundlePath = `./bundle/pages${path}.js`;
+    // remove current script tag and replace with new one
+    const existingScript = document.getElementById('_page');
+    if (!existingScript) throw new Error('Page script not found');
+    const script = document.createElement('script');
+    script.id = '_page';
+    script.type = 'module';
+    script.appendChild(
+        document.createTextNode(
+            `import h from './bundle/lib/render.js';import p from '${bundlePath}';h(p);`,
+        ),
+    );
+    existingScript.replaceWith(script);
 };
