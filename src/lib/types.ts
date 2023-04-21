@@ -1,11 +1,8 @@
-export interface PageMeta {
-    hydrate?: boolean;
-    noSsr?: boolean;
-}
+import { RouterHistory } from '@/lib/history.ts';
 
 export type NoProps = Record<string, never>;
 
-export type PageType<P = NoProps> = ComponentType<P> & { meta?: PageMeta };
+export type PageType = ComponentType<NoProps>;
 
 export type ComponentType<P = NoProps> = <T extends keyof HTMLElementTagNameMap>(props: P) => Node<T>;
 
@@ -76,6 +73,6 @@ declare global {
     }
 
     interface Window {
-        router: any;
+        router: RouterHistory;
     }
 }

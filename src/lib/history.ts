@@ -4,9 +4,9 @@ export interface RouterHistory {
     location: RouterLocation;
     listen: (cb: () => void) => () => void;
     // deno-lint-ignore no-explicit-any
-    push: (path: string, state: any) => void;
+    push: (path: string, state?: any) => void;
     // deno-lint-ignore no-explicit-any
-    replace: (path: string, state: any) => void;
+    replace: (path: string, state?: any) => void;
     go: (index: number) => void;
     back: () => void;
     forward: () => void;
@@ -44,8 +44,10 @@ const stopBlocking = () => {
 function createHistory(opts: {
     getLocation: () => RouterLocation;
     listener: (onUpdate: () => void) => () => void;
-    pushState: (path: string, state: any) => void;
-    replaceState: (path: string, state: any) => void;
+    // deno-lint-ignore no-explicit-any
+    pushState: (path: string, state?: any) => void;
+    // deno-lint-ignore no-explicit-any
+    replaceState: (path: string, state?: any) => void;
     go: (n: number) => void;
     back: () => void;
     forward: () => void;

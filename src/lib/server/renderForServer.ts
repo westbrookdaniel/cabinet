@@ -34,11 +34,7 @@ async function getPageDataForPath(modules: ModuleMap, path: string) {
     try {
         await Deno.stat(`./src/pages/${fileName}.tsx`);
     } catch {
-        return {
-            component: modules._404,
-            meta: modules._404.meta,
-            fileName,
-        };
+        return { component: modules._404, fileName };
     }
 
     const module = modules[`_${fileName}`];
@@ -47,11 +43,7 @@ async function getPageDataForPath(modules: ModuleMap, path: string) {
         throw new Error(`Couldnt find vaild component for ${path}`);
     }
 
-    return {
-        component: module,
-        meta: module.meta,
-        fileName,
-    };
+    return { component: module, fileName };
 }
 
 const wrapInRoot = (html: string) => `<div id="_root">${html}</div>`;
@@ -59,16 +51,11 @@ const wrapInRoot = (html: string) => `<div id="_root">${html}</div>`;
 export async function renderForServer(modules: ModuleMap, url: URL): Promise<string> {
     const page = await getPageDataForPath(modules, url.pathname);
 
-    const shouldHydrate = page.meta?.hydrate !== false;
-    const noSsr = page.meta?.noSsr === true;
-
     const uglyTemplate = TEMPLATE.replace(/<!--(.*?)-->|\s\B/gm, '');
 
-    return uglyTemplate.replace('{{app}}', wrapInRoot(noSsr ? '' : serializeNode(page.component({}))))
+    return uglyTemplate.replace('{{app}}', wrapInRoot(serializeNode(page.component({}))))
         .replace(
             '{{scripts}}',
-            shouldHydrate
-                ? `<script id='_page' type="module">import h from './bundle/lib/render.js';import p from './bundle/pages/${page.fileName}.js';h(p);</script>`
-                : '',
+            `<script id='_page' type="module">import h from './bundle/lib/hydrate.js';import p from './bundle/pages/${page.fileName}.js';h(p);</script>`,
         );
 }
