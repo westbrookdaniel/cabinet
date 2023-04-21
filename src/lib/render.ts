@@ -13,17 +13,9 @@ export function renderNode(
         return renderNode(previousEl, node.type(node.attributes));
     }
 
-    // Assume they're different unless a data-key is provided
-    // This is only really useful for lists, and even then
-    // this version won't work if you append to the start of the list
-    const dataId = node.attributes['data-id'];
-    const isSameElement = dataId !== undefined && previousEl?.dataset.id === dataId;
-
-    // Don't create a new element if it's the same
-    const el: HTMLElement = isSameElement ? previousEl : document.createElement(node.type);
-
-    // If we made a new element, put it in the dom
-    if (!isSameElement) previousEl?.replaceChildren(el);
+    // TODO: Add optimisation around reusing dom elements
+    const el: HTMLElement = document.createElement(node.type);
+    previousEl?.replaceChildren(el);
 
     applyAttributes(node, el);
 
@@ -98,6 +90,7 @@ function applyAttributes(node: Node, el: HTMLElement) {
             } else {
                 listenersInUse.get(el)!.push([eventType, value]);
             }
+            return;
         }
         el.setAttribute(key, value);
     });
