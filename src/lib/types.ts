@@ -6,8 +6,15 @@ export type PageType = ComponentType<NoProps>;
 
 export type ComponentType<P = NoProps> = <T extends keyof HTMLElementTagNameMap>(props: P) => Node<T>;
 
+export type ServerModule = {
+    get?: (req: Request) => Promise<Response> | Response;
+    post?: (req: Request) => Promise<Response> | Response;
+};
+
 export interface ModuleMap {
-    [key: string]: PageType;
+    // Because we * import all modules, we can't use the type of the module
+    // deno-lint-ignore no-explicit-any
+    [key: string]: any; // PageType | ServerModule;
 }
 
 // Node can also be string? or null maybe?

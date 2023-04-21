@@ -33,21 +33,22 @@ async function getPageDataForPath(modules: ModuleMap, path: string) {
     const fileName = path === '/' ? 'index' : path.slice(1);
 
     try {
+        if (fileName.includes('.server')) throw new Error('Server only');
         await Deno.stat(`./src/pages/${fileName}.tsx`);
     } catch {
         const script = `import h from './bundle/lib/hydrate.js';import p from './bundle/pages/404.js';h(p);`;
-        return { component: modules._404, script, status: Status.NotFound };
+        return { component: modules._404.default, script, status: Status.NotFound };
     }
 
-    const module = modules[`_${fileName}`];
+    const component = modules[`_${fileName}`]?.default;
 
-    if (typeof module !== 'function') {
+    if (typeof component !== 'function') {
         throw new Error(`Couldnt find vaild component for ${path}`);
     }
 
     const script =
         `import h from './bundle/lib/hydrate.js';import p from './bundle/pages/${fileName}.js';h(p);`;
-    return { component: module, script, status: Status.OK };
+    return { component, script, status: Status.OK };
 }
 
 const wrapInRoot = (html: string) => `<div id="_root">${html}</div>`;
