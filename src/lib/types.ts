@@ -74,4 +74,8 @@ declare global {
             props: any;
         }
     }
+
+    interface Window {
+        router: any;
+    }
 }

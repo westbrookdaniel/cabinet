@@ -1,5 +1,6 @@
 import type { ComponentType, Node } from '@/lib/types.ts';
 import { traverse } from '@/lib/traverse.ts';
+import { createBrowserHistory, RouterHistory } from './history.ts';
 
 /**
  * Creates dom element from a node
@@ -85,23 +86,46 @@ export default function hydrate(component: ComponentType) {
     const root = document.getElementById('_root');
     if (!root) throw new Error('Root element not found');
     renderNode(root, { type: component, attributes: {} });
-    // TODO: Make this work better
-    // createClientRouter(root);
+    // TODO: Not quite working yet
+    // window.router = createClientRouter(root);
+}
+
+interface Router {
+    history: RouterHistory;
+    // deno-lint-ignore no-explicit-any
+    navigate: (path: string, state?: any) => void;
 }
 
 /**
  * Setup client side routing
  */
 function createClientRouter(root: HTMLElement) {
-    // Handle history api events
-    // TODO: This is hard
-    const onPopState = (e: PopStateEvent) => {
-        console.log(e);
+    const history = createBrowserHistory();
+    const router: Router = {
+        history,
+        navigate: (path, state) => {
+            history.push(path, state);
+
+            // TODO: Rework how this all works
+            // Get path to bundle
+            const bundlePath = `./bundle/pages${path === '/' ? '/index' : path}.js`;
+            // remove current script tag and replace with new one
+            const existingScript = document.getElementById('_page');
+            if (!existingScript) throw new Error('Page script not found');
+            const script = document.createElement('script');
+            script.id = '_page';
+            script.type = 'module';
+            script.appendChild(
+                document.createTextNode(
+                    `import h from './bundle/lib/render.js';import p from '${bundlePath}';h(p);`,
+                ),
+            );
+            existingScript.replaceWith(script);
+        },
     };
-    addEventListener('popstate', onPopState);
 
     // Hijack all links
-    root.querySelectorAll('a').forEach((el) => hijackLink(el));
+    root.querySelectorAll('a').forEach((el) => hijackLink(router, el));
 
     // Watch for changes to the dom and hijack new or changed links
     const observer = new MutationObserver((mutations) => {
@@ -110,14 +134,14 @@ function createClientRouter(root: HTMLElement) {
                 case 'childList':
                     mutation.addedNodes.forEach((node) => {
                         if (node instanceof HTMLAnchorElement) {
-                            hijackLink(node);
+                            hijackLink(router, node);
                         }
                     });
                     break;
                 case 'attributes': {
                     const el = mutation.target;
                     if (el instanceof HTMLAnchorElement) {
-                        hijackLink(el);
+                        hijackLink(router, el);
                     }
                 }
             }
@@ -129,6 +153,8 @@ function createClientRouter(root: HTMLElement) {
         subtree: true,
         attributes: true,
     });
+
+    return router;
 }
 
 /**
@@ -137,7 +163,7 @@ function createClientRouter(root: HTMLElement) {
  */
 const existingRouterListeners = new WeakMap<HTMLElement, [string, EventListenerOrEventListenerObject]>();
 
-const hijackLink = (el: HTMLAnchorElement) => {
+const hijackLink = (router: Router, el: HTMLAnchorElement) => {
     // Remove old listener
     // We remove it here in case the target changes, or it changes to an external link
     if (existingRouterListeners.has(el)) {
@@ -152,32 +178,7 @@ const hijackLink = (el: HTMLAnchorElement) => {
         e.preventDefault();
         const href = el.getAttribute('href')!;
         if (!el.target && href?.startsWith('/')) {
-            navigate(href);
+            router.navigate(href);
         }
     });
-};
-
-// deno-lint-ignore no-explicit-any
-const navigate = (url: string, state?: any) => {
-    if (location.pathname === url) return;
-    history.scrollRestoration = 'auto';
-    history.pushState(state, '', url);
-
-    // TODO: Rework how this all works
-    // Get path to bundle
-    let path = url;
-    if (path === '/') path = '/index';
-    const bundlePath = `./bundle/pages${path}.js`;
-    // remove current script tag and replace with new one
-    const existingScript = document.getElementById('_page');
-    if (!existingScript) throw new Error('Page script not found');
-    const script = document.createElement('script');
-    script.id = '_page';
-    script.type = 'module';
-    script.appendChild(
-        document.createTextNode(
-            `import h from './bundle/lib/render.js';import p from '${bundlePath}';h(p);`,
-        ),
-    );
-    existingScript.replaceWith(script);
 };
