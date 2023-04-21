@@ -1,1 +1,1 @@
-import{jsx as t}from"@/lib/jsx-runtime";const e=()=>t("h1",{children:"Page Not Found"});var o=e;export{o as default};
+function o(t,e){return typeof t=="function"?{type:t,attributes:e}:{type:t,attributes:e}}var n=()=>o("h1",{children:"Page Not Found"}),p=n;export{p as default};

@@ -80,7 +80,9 @@ export async function bundle() {
     }
     const resolvedFiles = files.map((f) => new URL(f, import.meta.url).pathname);
 
-    console.log(resolvedFiles.map((f) => f.replace(Deno.cwd(), '')).join('\n'));
+    if (import.meta.main) {
+        console.log(resolvedFiles.map((f) => f.replace(Deno.cwd(), '')).join('\n'));
+    }
 
     await bundleFiles(resolvedFiles);
 }
