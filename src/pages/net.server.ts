@@ -2,7 +2,7 @@ import { Status } from 'std/http/http_status.ts';
 
 export function get() {
     return Response.json({
-        message: `Hello from Deno v${Deno.version.deno}! Number: ${Math.random()}}`,
+        message: `Hello from Deno! Number: ${Math.random()}}`,
     });
 }
 
