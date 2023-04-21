@@ -32,24 +32,27 @@ const Todos: PageType = () => {
 function AddTodo({ onAdd }: { onAdd: (value: string) => void }) {
     const text = ref('');
     return (
-        <div>
-            <input
-                style='margin-right: 4px;'
-                value={text.value}
-                oninput={(e) => {
-                    const el = e.target as HTMLInputElement;
-                    text.value = el.value;
-                }}
-            />
-            <button
-                onclick={() => {
-                    if (!text.value) return;
-                    onAdd(text.value);
-                }}
-            >
-                Add
-            </button>
-        </div>
+        <label style='display: flex; flex-direction: column; font-size: 12px; gap: 4px;'>
+            Add Todo
+            <div>
+                <input
+                    style='margin-right: 4px;'
+                    value={text.value}
+                    oninput={(e) => {
+                        const el = e.target as HTMLInputElement;
+                        text.value = el.value;
+                    }}
+                />
+                <button
+                    onclick={() => {
+                        if (!text.value) return;
+                        onAdd(text.value);
+                    }}
+                >
+                    Add
+                </button>
+            </div>
+        </label>
     );
 }
 
