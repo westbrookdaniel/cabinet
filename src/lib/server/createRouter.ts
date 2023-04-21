@@ -1,9 +1,11 @@
-import { renderForServer } from '@/lib/server/renderForServer.ts';
+import { servePageModule } from '@/lib/server/servePageModule.ts';
 import { serveDir } from 'std/http/file_server.ts';
 import { ModuleMap } from '@/lib/types.ts';
 import { serveBundle } from '@/lib/server/serveBundle.ts';
 import { normalize } from 'std/path/posix.ts';
 import { blue, green, yellow } from 'std/fmt/colors.ts';
+import { Status } from 'std/http/http_status.ts';
+import { serveServerModule } from '@/lib/server/serveServerModule.ts';
 
 export const createRouter = async (modules: ModuleMap) => {
     await generateModules();
@@ -11,8 +13,13 @@ export const createRouter = async (modules: ModuleMap) => {
     return async (req: Request): Promise<Response> => {
         const url = new URL(req.url);
 
+        if (url.pathname.startsWith('/api')) {
+            const res = await serveServerModule(modules, req);
+            log(req, res, 'server');
+            return res;
+        }
         if (req.method !== 'GET') {
-            const res = new Response('Method not allowed', { status: 405 });
+            const res = new Response('Method not allowed', { status: Status.MethodNotAllowed });
             log(req, res);
             return res;
         }
@@ -22,7 +29,7 @@ export const createRouter = async (modules: ModuleMap) => {
             return res;
         }
         if (url.pathname === '/favicon.ico') {
-            const res = new Response(null, { status: 404 });
+            const res = new Response(null, { status: Status.NotFound });
             log(req, res, 'file');
             return res;
         }
@@ -32,7 +39,7 @@ export const createRouter = async (modules: ModuleMap) => {
             return res;
         }
 
-        const { html, status } = await renderForServer(modules, url);
+        const { html, status } = await servePageModule(modules, url);
         const res = new Response(new TextEncoder().encode(html), { status });
         log(req, res, 'page');
         return res;
