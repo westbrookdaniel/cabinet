@@ -62,7 +62,7 @@ function AddTodo({ onAdd }: { onAdd: (value: string) => void }) {
 function TodoList({ todos }: { todos: Todo[] }) {
     return (
         <div style='margin-top: 14px; display: flex; flex-direction: column; gap: 4px;'>
-            {todos.map((todo) => <TodoItem todo={todo} />)}
+            {todos.map((todo) => <TodoItem data-key={todo.id} todo={todo} />)}
         </div>
     );
 }

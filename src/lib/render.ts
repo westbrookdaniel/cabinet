@@ -14,6 +14,8 @@ export function renderNode(
     }
 
     // Assume they're different unless a data-key is provided
+    // This is only really useful for lists, and even then
+    // this version won't work if you append to the start of the list
     const dataId = node.attributes['data-id'];
     const isSameElement = dataId !== undefined && previousEl?.dataset.id === dataId;
 
