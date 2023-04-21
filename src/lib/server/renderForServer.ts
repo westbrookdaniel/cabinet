@@ -1,5 +1,6 @@
 import type { ModuleMap, Node } from '@/lib/types.ts';
 import { traverse } from '@/lib/traverse.ts';
+import { Status } from 'std/http/http_status.ts';
 
 const TEMPLATE = await Deno.readTextFile('./src/index.html');
 
@@ -34,7 +35,8 @@ async function getPageDataForPath(modules: ModuleMap, path: string) {
     try {
         await Deno.stat(`./src/pages/${fileName}.tsx`);
     } catch {
-        return { component: modules._404, fileName };
+        const script = `import h from './bundle/lib/hydrate.js';import p from './bundle/pages/404.js';h(p);`;
+        return { component: modules._404, script, status: Status.NotFound };
     }
 
     const module = modules[`_${fileName}`];
@@ -43,19 +45,23 @@ async function getPageDataForPath(modules: ModuleMap, path: string) {
         throw new Error(`Couldnt find vaild component for ${path}`);
     }
 
-    return { component: module, fileName };
+    const script =
+        `import h from './bundle/lib/hydrate.js';import p from './bundle/pages/${fileName}.js';h(p);`;
+    return { component: module, script, status: Status.OK };
 }
 
 const wrapInRoot = (html: string) => `<div id="_root">${html}</div>`;
 
-export async function renderForServer(modules: ModuleMap, url: URL): Promise<string> {
-    const page = await getPageDataForPath(modules, url.pathname);
+export async function renderForServer(modules: ModuleMap, url: URL) {
+    const { component, script, status } = await getPageDataForPath(modules, url.pathname);
 
     const uglyTemplate = TEMPLATE.replace(/<!--(.*?)-->|\s\B/gm, '');
 
-    return uglyTemplate.replace('{{app}}', wrapInRoot(serializeNode(page.component({}))))
+    const html = uglyTemplate.replace('{{app}}', wrapInRoot(serializeNode(component({}))))
         .replace(
             '{{scripts}}',
-            `<script id='_page' type="module">import h from './bundle/lib/hydrate.js';import p from './bundle/pages/${page.fileName}.js';h(p);</script>`,
+            `<script id='_page' type="module">${script}</script>`,
         );
+
+    return { html, status };
 }

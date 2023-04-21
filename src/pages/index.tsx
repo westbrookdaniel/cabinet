@@ -50,6 +50,4 @@ const Home: PageType = () => {
     );
 };
 
-Home.meta = { noSsr: true };
-
 export default Home;

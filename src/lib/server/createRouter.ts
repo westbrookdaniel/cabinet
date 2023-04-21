@@ -2,31 +2,40 @@ import { renderForServer } from '@/lib/server/renderForServer.ts';
 import { serveDir } from 'std/http/file_server.ts';
 import { ModuleMap } from '@/lib/types.ts';
 import { serveBundle } from '@/lib/server/serveBundle.ts';
+import { normalize } from 'std/path/posix.ts';
+import { blue, green, yellow } from 'std/fmt/colors.ts';
 
 export const createRouter = async (modules: ModuleMap) => {
     await generateModules();
 
     return async (req: Request): Promise<Response> => {
-        if (req.method !== 'GET') {
-            return new Response('Method not allowed', { status: 405 });
-        }
-
         const url = new URL(req.url);
 
+        if (req.method !== 'GET') {
+            const res = new Response('Method not allowed', { status: 405 });
+            log(req, res);
+            return res;
+        }
         if (url.pathname.startsWith('/public')) {
-            return serveDir(req, { fsRoot: './public', urlRoot: 'public' });
+            const res = await serveDir(req, { fsRoot: './public', urlRoot: 'public', quiet: true });
+            log(req, res, 'file');
+            return res;
         }
-
-        if (url.pathname.startsWith('/bundle') && url.pathname.endsWith('.js')) {
-            return serveBundle(url.pathname.replace('/bundle/', ''));
-        }
-
         if (url.pathname === '/favicon.ico') {
-            return new Response(null, { status: 404 });
+            const res = new Response(null, { status: 404 });
+            log(req, res, 'file');
+            return res;
+        }
+        if (url.pathname.startsWith('/bundle') && url.pathname.endsWith('.js')) {
+            const res = await serveBundle(url.pathname.replace('/bundle/', ''));
+            log(req, res, 'bundle');
+            return res;
         }
 
-        const html = await renderForServer(modules, url);
-        return new Response(new TextEncoder().encode(html));
+        const { html, status } = await renderForServer(modules, url);
+        const res = new Response(new TextEncoder().encode(html), { status });
+        log(req, res, 'page');
+        return res;
     };
 };
 
@@ -62,4 +71,25 @@ export const modules = {
             'Runtime module generation is not supported on this platform. Please commit the generated file.',
         );
     }
+}
+
+function log(req: Request, res: Response, type = 'other') {
+    const d = new Date().toISOString();
+    const dateFmt = `${d.slice(0, 10)} ${d.slice(11, 19)}`;
+    const normalizedUrl = normalize(decodeURIComponent(new URL(req.url).pathname));
+    let s = `[${dateFmt}] [${req.method}] [${type}] ${normalizedUrl} ${res.status}`;
+
+    switch (type) {
+        case 'page':
+            s = green(s);
+            break;
+        case 'bundle':
+            s = yellow(s);
+            break;
+        case 'file':
+            s = blue(s);
+            break;
+    }
+
+    console.debug(s);
 }

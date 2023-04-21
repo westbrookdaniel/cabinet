@@ -1,12 +1,14 @@
 import { bundleFiles } from '@/lib/server/bundle.ts';
 
+const headers = { 'Content-Type': 'application/javascript' };
+
 // not sure if these even does anything on deno deploy
 const cache = new Map<string, string>();
 
 export async function serveBundle(path: string) {
     // use cache if we have it
     if (cache.has(path)) {
-        return new Response(cache.get(path), { headers: { 'Content-Type': 'application/javascript' } });
+        return new Response(cache.get(path), { headers });
     }
 
     // path is something like bundle/pages/index.js
@@ -34,5 +36,5 @@ export async function serveBundle(path: string) {
     // serve bundled file and cache output
     const text = outputs[0].text;
     cache.set(path, text);
-    return new Response(text, { headers: { 'Content-Type': 'application/javascript' } });
+    return new Response(text, { headers });
 }
