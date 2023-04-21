@@ -14,6 +14,13 @@ export async function serveBundle(path: string) {
     // path is something like bundle/pages/index.js
     const pathToBundle = import.meta.resolve('../../' + path);
 
+    console.log(
+        pathToBundle,
+        pathToBundle.slice(0, pathToBundle.lastIndexOf('/')),
+        import.meta.url,
+        new URL(pathToBundle.slice(0, pathToBundle.lastIndexOf('/')), import.meta.url).pathname,
+    );
+
     // find the original file extension
     let ext: string | null = null;
     for await (
