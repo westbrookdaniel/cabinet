@@ -9,7 +9,7 @@ export function createClientRouter(root: HTMLElement) {
     const history = createBrowserHistory();
 
     history.listen(async () => {
-        const path = history.location.pathname;
+        const path = history.pathname;
         const bundlePath = `/_bundle/pages${path === '/' ? '/index' : path}.js`;
         const page: PageType = (await import(bundlePath)).default;
         renderNode(root, { type: page, attributes: {} });

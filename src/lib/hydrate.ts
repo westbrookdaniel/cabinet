@@ -9,6 +9,6 @@ import type { ComponentType } from '@/lib/types.ts';
 export default function hydrate(component: ComponentType) {
     const root = document.getElementById('_root');
     if (!root) throw new Error('Root element not found');
-    renderNode(root, { type: component, attributes: {} });
     window.router = createClientRouter(root);
+    renderNode(root, { type: component, attributes: {} });
 }

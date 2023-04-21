@@ -2,12 +2,23 @@ import type { ModuleMap, ModuleType, Node, PageType } from '@/lib/types.ts';
 import { traverse } from '@/lib/traverse.ts';
 import { Status } from 'std/http/http_status.ts';
 import { isFileForServerModule, isPageModule } from '@/lib/server/modules.ts';
+import { createBrowserHistory, RouterHistory } from '@/lib/history.ts';
 
 const TEMPLATE = await Deno.readTextFile('./src/index.html');
 
 export async function servePageModule(modules: ModuleMap<ModuleType>, url: URL, bundledFiles: string[]) {
     const path = url.pathname;
     const fileName = path === '/' ? 'index' : path.slice(1);
+
+    console.log(url.href);
+    window.router = {
+        href: url.href,
+        pathname: url.pathname,
+        search: url.search,
+        hash: url.hash,
+        state: null,
+        // We cast this on purpose
+    } as RouterHistory;
 
     try {
         if (isFileForServerModule(fileName)) throw new Error('Server only');

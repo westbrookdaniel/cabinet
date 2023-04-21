@@ -1,7 +1,6 @@
 // Pretty similar to the history npm package and TanStack Router
 
-export interface RouterHistory {
-    location: RouterLocation;
+export interface RouterHistory extends RouterLocation {
     listen: (cb: () => void) => () => void;
     // deno-lint-ignore no-explicit-any
     push: (path: string, state?: any) => void;
@@ -88,8 +87,20 @@ function createHistory(opts: {
     };
 
     return {
-        get location() {
-            return currentLocation;
+        get hash() {
+            return currentLocation.hash;
+        },
+        get href() {
+            return currentLocation.href;
+        },
+        get pathname() {
+            return currentLocation.pathname;
+        },
+        get search() {
+            return currentLocation.search;
+        },
+        get state() {
+            return currentLocation.state;
         },
         listen: (cb: () => void) => {
             if (listeners.size === 0) {
