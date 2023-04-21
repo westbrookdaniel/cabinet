@@ -8,6 +8,15 @@ function set(id: string, text: string) {
 }
 
 const Net: PageType = () => {
+    async function handleGet() {
+        if (typeof document === 'undefined') return;
+        set('get-res', 'Loading...');
+        const res = await fetch('/api/net');
+        const json = await res.json();
+        set('get-res', JSON.stringify(json));
+    }
+    handleGet();
+
     return (
         <div>
             <h1>Network Behaviours</h1>
@@ -18,12 +27,7 @@ const Net: PageType = () => {
                     <p>GET Request</p>
                     <div style='display: flex; gap: 8px; margin-top: 16px;'>
                         <button
-                            onclick={async () => {
-                                set('get-res', 'Loading...');
-                                const res = await fetch('/api/net');
-                                const json = await res.json();
-                                set('get-res', JSON.stringify(json));
-                            }}
+                            onclick={handleGet}
                         >
                             Go!
                         </button>
