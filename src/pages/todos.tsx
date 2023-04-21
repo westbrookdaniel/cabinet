@@ -58,18 +58,18 @@ function AddTodo({ onAdd }: { onAdd: (value: string) => void }) {
 
 function TodoList({ todos }: { todos: Ref<Todo[]> }) {
     return (
-        <ul>
+        <div style='margin-top: 14px; display: flex; flex-direction: column; gap: 4px;'>
             {todos.value.map((todo) => <TodoItem todo={todo} />)}
-        </ul>
+        </div>
     );
 }
 
 function TodoItem({ todo }: { todo: Todo }) {
     return (
-        <li>
+        <label style='display: block;'>
             <input type='checkbox' checked={todo.done ? true : undefined} />
-            <span>{todo.text}</span>
-        </li>
+            {todo.text}
+        </label>
     );
 }
 
