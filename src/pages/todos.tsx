@@ -15,17 +15,19 @@ const Todos: PageType = () => {
         { id: getId(), text: 'Improve performance', done: false },
     ];
 
+    const todosNode = <TodoList onToggle={onToggle} todos={todos} />;
+
     function onToggle(id: string) {
         const todo = todos.find((todo) => todo.id === id);
         if (todo) todo.done = !todo.done;
         const el = document.getElementById('todos');
-        if (el) renderNode(el, <TodoList onToggle={onToggle} todos={todos} />);
+        if (el) renderNode(el, todosNode);
     }
 
     function onAdd(text: string) {
         todos.unshift({ id: getId(), text, done: false });
         const el = document.getElementById('todos');
-        if (el) renderNode(el, <TodoList onToggle={onToggle} todos={todos} />);
+        if (el) renderNode(el, todosNode);
     }
 
     return (
@@ -33,7 +35,7 @@ const Todos: PageType = () => {
             <h1>Todos</h1>
             <AddTodo onAdd={onAdd} />
             <div id='todos'>
-                <TodoList onToggle={onToggle} todos={todos} />
+                {todosNode}
             </div>
         </div>
     );
