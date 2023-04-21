@@ -1,11 +1,8 @@
-import { memo, ref } from '@/lib/client.ts';
+import { ref } from '@/lib/client.ts';
 
 export default function Counter() {
     const count1 = ref(0);
     const count2 = ref(0);
-
-    // Log count1 value when count2 changes
-    memo([count2.value], () => console.log('count1:', count1.value));
 
     return (
         <div>

@@ -18,13 +18,11 @@ const Home: PageType = () => {
 
     const initTodos = todos.value;
 
-    const onToggle = (id: number) => {
+    const onToggle = memo([], () => (id: number) => {
         todos.value = initTodos.map((t) => {
             return t.id === id ? { ...t, done: !t.done } : t;
         });
-    };
-
-    console.log(memo([], () => Math.random()));
+    });
 
     return (
         <div>

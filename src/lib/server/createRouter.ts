@@ -14,7 +14,7 @@ export const createRouter = async (modules: ModuleMap) => {
         const url = new URL(req.url);
 
         if (url.pathname.startsWith('/public')) {
-            return serveDir(req, { fsRoot: './src/public', urlRoot: 'public' });
+            return serveDir(req, { fsRoot: './public', urlRoot: 'public' });
         }
 
         if (url.pathname.startsWith('/bundle') && url.pathname.endsWith('.js')) {
