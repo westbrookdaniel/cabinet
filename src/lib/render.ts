@@ -106,6 +106,12 @@ function createClientRouter(root: HTMLElement) {
                         }
                     });
                     break;
+                case 'attributes': {
+                    const el = mutation.target;
+                    if (el instanceof HTMLAnchorElement) {
+                        hijackLink(el);
+                    }
+                }
             }
         });
     });
@@ -113,10 +119,26 @@ function createClientRouter(root: HTMLElement) {
     observer.observe(root, {
         childList: true,
         subtree: true,
+        attributes: true,
     });
 }
 
+/**
+ * Map of elements to their event listeners
+ * TODO: Add some manual cleanup for listeners when the element is removed?
+ */
+const existingRouterListeners = new WeakMap<HTMLElement, [string, EventListenerOrEventListenerObject]>();
+
 const hijackLink = (el: HTMLAnchorElement) => {
+    // Remove old listener
+    // We remove it here in case the target changes, or it changes to an external link
+    if (existingRouterListeners.has(el)) {
+        const [eventType, listener] = existingRouterListeners.get(el)!;
+        el.removeEventListener(eventType, listener);
+        // Remove from map
+        existingRouterListeners.delete(el);
+    }
+
     // If same origin and internal
     el.addEventListener('click', (e) => {
         e.preventDefault();
