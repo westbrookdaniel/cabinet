@@ -38,7 +38,7 @@ export function renderNode(
 
 /**
  * Map of elements to their event listeners
- * TODO: Add some manual cleanup for listeners when the element is removed
+ * TODO: Add some manual cleanup for listeners when the element is removed?
  */
 const listenersInUse = new WeakMap<HTMLElement, [string, EventListenerOrEventListenerObject][]>();
 
@@ -85,4 +85,78 @@ export default function hydrate(component: ComponentType) {
     const root = document.getElementById('_root');
     if (!root) throw new Error('Root element not found');
     renderNode(root, { type: component, attributes: {} });
+    createClientRouter(root);
 }
+
+/**
+ * Setup client side routing
+ */
+function createClientRouter(root: HTMLElement) {
+    // Hijack all links
+    root.querySelectorAll('a').forEach((el) => hijackLink(el));
+
+    // Watch for changes to the dom and hijack new or changed links
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            switch (mutation.type) {
+                case 'childList':
+                    mutation.addedNodes.forEach((node) => {
+                        if (node instanceof HTMLAnchorElement) {
+                            hijackLink(node);
+                        }
+                    });
+                    break;
+                case 'attributes': {
+                    const el = mutation.target;
+                    if (el instanceof HTMLAnchorElement) {
+                        const attr = mutation.attributeName!;
+                        const value = el.getAttribute(attr);
+                        if (attr === 'href' && value?.startsWith(self.origin)) {
+                            hijackLink(el);
+                        }
+                    }
+                }
+            }
+        });
+    });
+
+    observer.observe(root, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+    });
+}
+/**
+ * Map of elements to their event listeners
+ * TODO: Add some manual cleanup for listeners when the element is removed?
+ */
+const existingRouterListeners = new WeakMap<HTMLElement, [string, EventListenerOrEventListenerObject]>();
+
+const hijackLink = (el: HTMLAnchorElement) => {
+    // Remove old listener
+    // We remove it here in case the target changes, or it changes to an external link
+    if (existingRouterListeners.has(el)) {
+        const [eventType, listener] = existingRouterListeners.get(el)!;
+        el.removeEventListener(eventType, listener);
+        // Remove from map
+        existingRouterListeners.delete(el);
+    }
+
+    // If same origin and internal
+    if (!el.target && el.href?.startsWith(self.origin)) {
+        el.addEventListener('click', (e) => {
+            e.preventDefault();
+            const href = el.getAttribute('href')!;
+            navigate(href);
+            // get page data from server
+            // replace page
+        });
+    }
+};
+
+// deno-lint-ignore no-explicit-any
+const navigate = (url: string, state?: any) => {
+    if (location.pathname === url) return;
+    history.scrollRestoration = 'auto';
+    history.pushState(state, '', url);
+};

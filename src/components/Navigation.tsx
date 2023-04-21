@@ -9,8 +9,9 @@ export default function Navigation() {
     // TODO: Add utility for url that works in both browser and server
     let currentPath: string | null = null;
     if (typeof document !== 'undefined') {
-        currentPath = window.location.pathname;
+        currentPath = location.pathname;
     }
+
     return (
         <nav style='display: flex; gap: 8px; margin-bottom: 32px;'>
             {Object.entries(routes).map(([path, name]) => (
