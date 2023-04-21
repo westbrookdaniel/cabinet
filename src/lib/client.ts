@@ -35,7 +35,7 @@ export function memo<T>(deps: any[], fn: () => T): T {
     const internals = getInternals();
     const key = internals.register(null);
     const state = internals.get<MemoType<T>>(key);
-    if (state && (state.deps.length === 0 || state.deps.every((dep, i) => dep === deps[i]))) {
+    if (state && state.deps.every((dep, i) => dep === deps[i])) {
         return state.value;
     }
     const value = fn();
