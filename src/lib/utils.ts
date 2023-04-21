@@ -7,3 +7,14 @@ export const withFormData = <T>(cb: (data: T, target: HTMLFormElement) => void) 
     const data = Object.fromEntries(formData.entries()) as T;
     cb(data, el);
 };
+
+// deno-lint-ignore no-explicit-any
+export function postJson(json: Record<any, any>): RequestInit {
+    return {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(json),
+    };
+}

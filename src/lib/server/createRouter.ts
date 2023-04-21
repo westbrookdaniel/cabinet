@@ -15,7 +15,7 @@ export const createRouter = async (modules: ModuleMap) => {
 
         if (url.pathname.startsWith('/api')) {
             const res = await serveServerModule(modules, req);
-            log(req, res, 'server');
+            log(req, res, 'api');
             return res;
         }
         if (req.method !== 'GET') {

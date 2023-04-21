@@ -1,11 +1,21 @@
-export function get(_req: Request) {
+import { Status } from 'std/http/http_status.ts';
+
+export function get() {
     return Response.json({
-        message: 'Hello World',
+        message: 'Hello from the server!',
     });
 }
 
-export function post(_req: Request) {
-    return Response.json({
-        message: 'Hello World 2',
-    });
+export async function post(req: Request) {
+    try {
+        const data = await req.json();
+        if (!('name' in data) || !data.name) throw new Error('No name provided');
+        return Response.json({
+            message: `Created User For ${data.name}`,
+        });
+    } catch (e) {
+        return Response.json({
+            message: `Error: ${e.message}`,
+        }, { status: Status.BadRequest });
+    }
 }
