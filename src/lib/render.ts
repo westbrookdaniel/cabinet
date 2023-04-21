@@ -126,6 +126,7 @@ function createClientRouter(root: HTMLElement) {
         attributes: true,
     });
 }
+
 /**
  * Map of elements to their event listeners
  * TODO: Add some manual cleanup for listeners when the element is removed?
@@ -148,8 +149,24 @@ const hijackLink = (el: HTMLAnchorElement) => {
             e.preventDefault();
             const href = el.getAttribute('href')!;
             navigate(href);
-            // get page data from server
-            // replace page
+
+            // TODO: Rework how this all works
+            // Get path to bundle
+            let path = href.replace(self.origin + '/', '');
+            if (path === '/') path = '/index';
+            const bundlePath = `./bundle/pages${path}.js`;
+            // remove current script tag and replace with new one
+            const existingScript = document.getElementById('_page');
+            if (!existingScript) throw new Error('Page script not found');
+            const script = document.createElement('script');
+            script.id = '_page';
+            script.type = 'module';
+            script.appendChild(
+                document.createTextNode(
+                    `import h from './bundle/lib/render.js';import p from '${bundlePath}';h(p);`,
+                ),
+            );
+            existingScript.replaceWith(script);
         });
     }
 };

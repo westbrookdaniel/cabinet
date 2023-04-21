@@ -68,7 +68,7 @@ export async function renderForServer(modules: ModuleMap, url: URL): Promise<str
         .replace(
             '{{scripts}}',
             shouldHydrate
-                ? `<script type="module">import h from './bundle/lib/render.js';import p from './bundle/pages/${page.fileName}.js';h(p);</script>`
+                ? `<script id='_page' type="module">import h from './bundle/lib/render.js';import p from './bundle/pages/${page.fileName}.js';h(p);</script>`
                 : '',
         );
 }
