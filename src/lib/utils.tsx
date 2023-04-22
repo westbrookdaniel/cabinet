@@ -27,7 +27,9 @@ export function setMeta(meta: Node[]) {
     if (!head) return;
     meta.forEach((node) => {
         const el = renderNode(null, node);
-        const existing = head.querySelector(`meta[name="${el.getAttribute('name')}"], title`);
+        const existing = el.nodeName === 'TITLE'
+            ? head.querySelector('title')
+            : head.querySelector(`meta[name="${el.getAttribute('name')}"]`);
         if (existing) {
             existing.replaceWith(el);
         } else {
