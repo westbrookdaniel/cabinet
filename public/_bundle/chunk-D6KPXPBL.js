@@ -1,0 +1,2 @@
+import{a as t}from"./chunk-K62W53BH.js";var a={"/":"Home","/todos":"Todos","/net":"Network"},r="font-weight: bold; text-decoration: underline;";function s(){let o=window.router.pathname;return t("nav",{style:"display: flex; gap: 8px; margin-bottom: 32px;",children:Object.entries(a).map(([e,n])=>t("a",{href:e,style:o===e?r:"",children:n}))})}export{s as a};
+//# sourceMappingURL=chunk-D6KPXPBL.js.map

@@ -1,7 +1,7 @@
-import type { ComponentType, Node } from '@/lib/types.ts';
+import type { Node, PageType } from '@/lib/types.ts';
 
 function jsx<K extends keyof HTMLElementTagNameMap>(
-    elementType: K | ComponentType,
+    elementType: K | PageType,
     attributes: Node['attributes'],
 ): Node<K> {
     if (typeof elementType === 'function') {

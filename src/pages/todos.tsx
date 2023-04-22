@@ -1,7 +1,7 @@
 import type { PageType } from '@/lib/types.ts';
-import { getId, withFormData } from '@/lib/utils.ts';
+import { getId, withFormData } from '@/lib/utils.tsx';
 import { renderNode } from '@/lib/render.ts';
-import Navigation from '../components/Navigation.tsx';
+import Navigation from '@/components/Navigation.tsx';
 
 type Todo = {
     id: string;
@@ -91,5 +91,10 @@ function TodoItem({ todo, onToggle }: { todo: Todo; onToggle: (id: string) => vo
         </label>
     );
 }
+
+Todos.meta = {
+    title: 'Todos',
+    description: 'Todos Page',
+};
 
 export default Todos;

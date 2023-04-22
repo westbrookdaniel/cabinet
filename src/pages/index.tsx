@@ -50,4 +50,9 @@ const Home: PageType = () => {
     );
 };
 
+Home.meta = {
+    title: 'Home',
+    description: 'Home page',
+};
+
 export default Home;

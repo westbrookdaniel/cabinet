@@ -5,7 +5,7 @@ import { traverse } from '@/lib/traverse.ts';
  * Creates dom element from a node
  */
 export function renderNode(
-    previousEl: HTMLElement | undefined,
+    previousEl: HTMLElement | undefined | null,
     node: Node,
 ): HTMLElement {
     // If it's a component call it's render function

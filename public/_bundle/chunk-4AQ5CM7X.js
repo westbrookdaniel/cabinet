@@ -1,0 +1,2 @@
+var r=()=>Math.random().toString(36),i=n=>t=>{t.preventDefault();let e=t.target,o=new FormData(e),a=Object.fromEntries(o.entries());n(a,e)};function s(n){return{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(n)}}function c(n){let t=document.querySelector("head");t&&n.forEach(e=>{let o=t.querySelector(`meta[name="${e.getAttribute("name")}"]`);o?o.replaceWith(e):t.appendChild(e)})}export{r as a,i as b,s as c,c as d};
+//# sourceMappingURL=chunk-4AQ5CM7X.js.map

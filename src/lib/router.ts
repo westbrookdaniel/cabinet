@@ -1,6 +1,7 @@
 import { createBrowserHistory, RouterHistory } from '@/lib/history.ts';
 import { renderNode } from '@/lib/render.ts';
 import { PageType } from '@/lib/types.ts';
+import { setMeta } from '@/lib/utils.tsx';
 
 /**
  * Setup client side routing
@@ -13,6 +14,7 @@ export function createClientRouter(root: HTMLElement) {
         const bundlePath = `/_bundle/pages${path === '/' ? '/index' : path}.js`;
         const page: PageType = (await import(bundlePath)).default;
         renderNode(root, { type: page, attributes: {} });
+        if (page.meta) setMeta.from(page.meta);
     });
 
     // Hijack all links

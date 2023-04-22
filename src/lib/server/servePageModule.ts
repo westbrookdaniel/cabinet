@@ -62,23 +62,34 @@ function renderPage(
     },
 ) {
     const component = mod.default;
+    const meta = component.meta || {};
 
-    // TODO: Add title and meta tags
+    let html = TEMPLATE;
 
-    // TODO: Now that bundling is fixed can we improve this?
+    // Handle meta and head tags
+    // This is handled on the client too but we need to do it here for ssr
+    html = html.replace(
+        '{{head}}',
+        [
+            meta.title ? `<title>${meta.title}</title>` : null,
+            meta.description ? `<meta name="description" content="${meta.description}">` : null,
+            meta.image ? `<meta name="image" content="${meta.image}">` : null,
+            ...bundledFiles.filter((f) => !f.endsWith('.map')).map((file) =>
+                `<link rel="preload" as="script" src="/_bundle${file}"></link>`
+            ),
+        ].filter(Boolean).join(''),
+    );
+
+    // Handle page content
+    html = html.replace('{{app}}', wrapInRoot(serializeNode(component({}))));
+
+    // Handle page scripts
     const script =
         `import h from '/_bundle/lib/hydrate.js';import p from '/_bundle/pages/${fileName}.js';h(p);`;
-
-    const html = TEMPLATE.replace('{{app}}', wrapInRoot(serializeNode(component({}))))
-        .replace(
-            '{{scripts}}',
-            `<script id='_page' type="module">${script}</script>${
-                bundledFiles.filter((f) => f.endsWith('.map')).map((file) =>
-                    `<link rel="preload" as="script" src="/_bundle${file}"></link>`
-                )
-                    .join('')
-            }`,
-        );
+    html = html.replace(
+        '{{scripts}}',
+        `<script id='_page' type="module">${script}</script>`,
+    );
 
     return { html, status };
 }

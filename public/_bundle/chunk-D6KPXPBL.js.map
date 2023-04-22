@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../src/components/Navigation.tsx"],
+  "sourcesContent": ["const routes = {\n    '/': 'Home',\n    '/todos': 'Todos',\n    '/net': 'Network',\n};\n\nconst activeStyles = 'font-weight: bold; text-decoration: underline;';\n\nexport default function Navigation() {\n    const currentPath = window.router.pathname;\n    return (\n        <nav style='display: flex; gap: 8px; margin-bottom: 32px;'>\n            {Object.entries(routes).map(([path, name]) => (\n                <a href={path} style={currentPath === path ? activeStyles : ''}>\n                    {name}\n                </a>\n            ))}\n        </nav>\n    );\n}\n"],
+  "mappings": "wCAAA,IAAMA,EAAS,CACX,IAAK,OACL,SAAU,QACV,OAAQ,SACZ,EAEMC,EAAe,iDAEN,SAARC,GAA8B,CACjC,IAAMC,EAAc,OAAO,OAAO,SAClC,OACIC,EAAC,OAAI,MAAM,gDACN,gBAAO,QAAQJ,CAAM,EAAE,IAAI,CAAC,CAACK,EAAMC,CAAI,IACpCF,EAAC,KAAE,KAAMC,EAAM,MAAOF,IAAgBE,EAAOJ,EAAe,GACvD,SAAAK,EACL,CACH,EACL,CAER",
+  "names": ["routes", "activeStyles", "Navigation", "currentPath", "jsx", "path", "name"]
+}

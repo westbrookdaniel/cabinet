@@ -2,9 +2,17 @@ import { RouterHistory } from '@/lib/history.ts';
 
 export type NoProps = Record<string, never>;
 
-export type PageType = ComponentType<NoProps>;
+export type BasicMeta = {
+    title?: string;
+    description?: string;
+    image?: string;
+};
 
-export type ComponentType<P = NoProps> = <T extends keyof HTMLElementTagNameMap>(props: P) => Node<T>;
+export type PageType = PageType<NoProps> & {
+    meta?: BasicMeta;
+};
+
+export type PageType<P = NoProps> = <T extends keyof HTMLElementTagNameMap>(props: P) => Node<T>;
 
 export type ServerModule = {
     get?: (req: Request) => Promise<Response> | Response;
@@ -27,7 +35,7 @@ export interface ModuleMap<T = any> {
 // Node can also be string? or null maybe?
 // deno-lint-ignore no-explicit-any
 export type Node<T extends keyof HTMLElementTagNameMap = any> = {
-    type: T | ComponentType;
+    type: T | PageType;
     attributes: Omit<HTMLElementTagNameMap[T], 'children' | 'style'> & {
         children?: Child[] | Child;
         style?: string;
@@ -73,7 +81,7 @@ declare global {
                 [K in keyof IntrinsicElements]: P extends IntrinsicElements[K] ? K
                     : never;
             }[keyof IntrinsicElements]
-            | ComponentType<P>;
+            | PageType<P>;
 
         interface ElementChildrenAttribute {
             // deno-lint-ignore no-explicit-any

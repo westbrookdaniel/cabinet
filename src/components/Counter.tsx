@@ -1,4 +1,4 @@
-import { getId } from '@/lib/utils.ts';
+import { getId } from '@/lib/utils.tsx';
 
 function render(id: string, contents: string) {
     const el = document.getElementById(id);

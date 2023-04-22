@@ -1,6 +1,6 @@
 import type { PageType } from '@/lib/types.ts';
 import Navigation from '@/components/Navigation.tsx';
-import { postJson, withFormData } from '@/lib/utils.ts';
+import { postJson, withFormData } from '@/lib/utils.tsx';
 
 function set(id: string, text: string) {
     const el = document.getElementById(id);
@@ -55,6 +55,11 @@ const Net: PageType = () => {
             </div>
         </div>
     );
+};
+
+Net.meta = {
+    title: 'Network Behaviours',
+    description: 'Play with network behaviours',
 };
 
 export default Net;

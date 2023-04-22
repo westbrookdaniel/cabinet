@@ -1,7 +1,7 @@
 {
   "version": 3,
   "sources": ["../../../src/pages/404.tsx"],
-  "sourcesContent": ["import type { PageType } from '@/lib/types.ts';\n\nconst NotFound: PageType = () => {\n    return <h1>Page Not Found</h1>;\n};\n\nexport default NotFound;\n"],
-  "mappings": "yCAEA,IAAMA,EAAqB,IAChBC,EAAC,MAAG,0BAAc,EAGtBC,EAAQF",
+  "sourcesContent": ["import type { PageType } from '@/lib/types.ts';\n\nconst NotFound: PageType = () => {\n    return <h1>Page Not Found</h1>;\n};\n\nNotFound.meta = {\n    title: 'Page Not Found',\n    description: 'We had trouble finding that page',\n};\n\nexport default NotFound;\n"],
+  "mappings": "yCAEA,IAAMA,EAAqB,IAChBC,EAAC,MAAG,0BAAc,EAG7BD,EAAS,KAAO,CACZ,MAAO,iBACP,YAAa,kCACjB,EAEA,IAAOE,EAAQF",
   "names": ["NotFound", "jsx", "__default"]
 }
